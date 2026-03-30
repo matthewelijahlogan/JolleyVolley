@@ -1,6 +1,6 @@
 # Jolley Volley
 
-Jolley Volley is the first framework pass for a neon-styled volleyball application focused on:
+Jolley Volley is the first framework pass for a neon-styled React Native application focused on:
 
 - viable live scoring
 - player statistics
@@ -9,7 +9,7 @@ Jolley Volley is the first framework pass for a neon-styled volleyball applicati
 
 ## Current scaffold
 
-- Expo + React Native app shell
+- Expo + React Native app shell in vanilla JavaScript
 - branded landing screen with `Bangers` typography
 - fixed top icon using `assets/images/icon.png`
 - animated fading logo using `assets/images/logo.png`

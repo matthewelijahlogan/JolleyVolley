@@ -2,19 +2,7 @@ import { StyleSheet, Text, View } from "react-native";
 
 import { colors, neonShadow, radii, spacing } from "../theme/theme";
 
-type FeatureCardProps = {
-  eyebrow: string;
-  title: string;
-  description: string;
-  bullets: string[];
-};
-
-export function FeatureCard({
-  eyebrow,
-  title,
-  description,
-  bullets,
-}: FeatureCardProps) {
+export function FeatureCard({ eyebrow, title, description, bullets }) {
   return (
     <View style={styles.card}>
       <Text style={styles.eyebrow}>{eyebrow}</Text>

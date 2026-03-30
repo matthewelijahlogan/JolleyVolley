@@ -6,3 +6,11 @@ npm-debug.*
 yarn-debug.*
 yarn-error.*
 .DS_Store
+android/.gradle/
+android/app/build/
+android/build/
+android/local.properties
+*.iml
+.cxx/
+*.keystore
+!android/app/debug.keystore

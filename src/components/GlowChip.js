@@ -2,11 +2,7 @@ import { Pressable, StyleSheet, Text } from "react-native";
 
 import { colors, radii, spacing } from "../theme/theme";
 
-type GlowChipProps = {
-  label: string;
-};
-
-export function GlowChip({ label }: GlowChipProps) {
+export function GlowChip({ label }) {
   return (
     <Pressable style={styles.chip}>
       <Text style={styles.label}>{label}</Text>
