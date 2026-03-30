@@ -4,6 +4,7 @@ import {BackHandler, StatusBar, View} from 'react-native';
 import {SplashOverlay} from './src/components/SplashOverlay';
 import {initialAnalysisInput, initialCoachBoard, initialProfiles} from './src/data/dashboard';
 import {AboutScreen} from './src/screens/AboutScreen';
+import {BallSpeedScreen} from './src/screens/BallSpeedScreen';
 import {CoachBoardScreen} from './src/screens/CoachBoardScreen';
 import {FeedbackScreen} from './src/screens/FeedbackScreen';
 import {HomeScreen} from './src/screens/HomeScreen';
@@ -179,9 +180,20 @@ export default function App() {
     );
   }
 
-  if (activeScreen === 'neon-playback') {
+  if (activeScreen === 'swing-tracker' || activeScreen === 'neon-playback') {
     screen = (
       <PlaybackScreen
+        analysisResult={analysisResult}
+        selectedVideo={selectedVideo}
+        {...sharedScreenProps}
+      />
+    );
+  }
+
+  if (activeScreen === 'ball-speed-tool') {
+    screen = (
+      <BallSpeedScreen
+        analysisInput={analysisInput}
         analysisResult={analysisResult}
         selectedVideo={selectedVideo}
         {...sharedScreenProps}
@@ -193,7 +205,7 @@ export default function App() {
     screen = <FeedbackScreen analysisResult={analysisResult} {...sharedScreenProps} />;
   }
 
-  if (activeScreen === 'jump-speed') {
+  if (activeScreen === 'motion-stats' || activeScreen === 'jump-speed') {
     screen = (
       <MetricsScreen
         analysisInput={analysisInput}

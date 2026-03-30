@@ -3,13 +3,13 @@
     id: 'motion-lab-menu',
     label: 'Motion Lab',
     eyebrow: 'Analysis Suite',
-    preview: 'Open the video analysis area for recording, playback, feedback, and jump-speed metrics.',
+    preview: 'Open the recorder, swing tracker, MPH tool, stats, and feedback tools for a player rep.',
     description:
-      'Motion Lab is the training hub. It groups the recorder, neon playback, swing correction feedback, and the jump plus speed metric breakdown in one place.',
+      'Motion Lab is the training hub. It groups the recorder, swing tracker, ball-speed tool, motion stats, and swing correction feedback in one place.',
     bullets: [
       'Record or import a player rep',
-      'Open neon playback and motion trails',
-      'Review AI-style correction cues and metric assessments',
+      'Open a dedicated swing tracker visual',
+      'Review ball speed, stats, and correction cues',
     ],
     openLabel: 'Open Motion Lab',
   },
@@ -62,9 +62,9 @@ export const motionLabSections = [
     id: 'motion-lab',
     label: 'Recorder',
     eyebrow: 'Capture',
-    preview: 'Record or import a rep and enter the session markers that drive the analysis.',
+    preview: 'Record or import a rep and set the core motion markers for the analysis.',
     description:
-      'Capture the athlete clip, set the main motion markers, and let the app score the rep from the current session data.',
+      'Capture the athlete clip, tune the current sample fields, and launch the Motion Lab tools from the same rep.',
     bullets: [
       'Open camera or video library',
       'Enter jump and release markers',
@@ -73,18 +73,46 @@ export const motionLabSections = [
     openLabel: 'Open Recorder',
   },
   {
-    id: 'neon-playback',
-    label: 'Neon Playback',
-    eyebrow: 'Replay',
-    preview: 'Watch the rep with the glowing hand and ball trail overlay.',
+    id: 'swing-tracker',
+    label: 'Swing Tracker',
+    eyebrow: 'Visual Tool',
+    preview: 'Show the hand moving through the hitting zone and call out hitch points in the swing.',
     description:
-      'Replay the active clip with the current neon swing path so hitch points and ball release feel easier to spot visually.',
+      'Swing Tracker focuses on the motion path itself. It shows the hand path through the zone, flags the current hitch severity, and keeps the visual tied to the active rep.',
     bullets: [
-      'Show the hand trail before contact',
-      'Show the ball trail after contact',
-      'Review the rep in a clean playback space',
+      'Highlight the hand path through the zone',
+      'Flag visible hitch severity',
+      'Keep the overlay linked to the active clip',
     ],
-    openLabel: 'Open Playback',
+    openLabel: 'Open Swing Tracker',
+  },
+  {
+    id: 'ball-speed-tool',
+    label: 'Ball Speed',
+    eyebrow: 'MPH Tool',
+    preview: 'Focus only on the current MPH estimate, release timing, and sample values.',
+    description:
+      'Ball Speed isolates the velocity side of the rep so the coach can work directly with MPH, release timing, distance sample, and FPS.',
+    bullets: [
+      'Show the current MPH estimate',
+      'Break out release timing in seconds',
+      'Tie the output to the active clip sample',
+    ],
+    openLabel: 'Open Ball Speed',
+  },
+  {
+    id: 'motion-stats',
+    label: 'Motion Stats',
+    eyebrow: 'Tabulated Figures',
+    preview: 'Return all current figures in one place for the rep.',
+    description:
+      'Motion Stats gathers the current rep values into one tabulated page, including jump, speed, hitch severity, timing, contact point, and landing control.',
+    bullets: [
+      'Score every entered motion marker',
+      'Return a readable assessment card for each stat',
+      'Keep the current clip and inputs tied to the output',
+    ],
+    openLabel: 'Open Motion Stats',
   },
   {
     id: 'swing-feedback',
@@ -99,20 +127,6 @@ export const motionLabSections = [
       'Suggest a cleaner next rep cue',
     ],
     openLabel: 'Open Feedback',
-  },
-  {
-    id: 'jump-speed',
-    label: 'Jump + Speed',
-    eyebrow: 'Metrics',
-    preview: 'Return the stat-by-stat assessment for the current rep.',
-    description:
-      'Jump plus Speed gives the user every calculated stat from the rep, including vertical, release timing, ball speed, hitch severity, contact timing, and landing control.',
-    bullets: [
-      'Score every entered motion marker',
-      'Return a readable assessment card for each stat',
-      'Keep the current clip and inputs tied to the output',
-    ],
-    openLabel: 'Open Metrics',
   },
 ];
 

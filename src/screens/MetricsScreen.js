@@ -69,10 +69,10 @@ export function MetricsScreen({analysisInput, analysisResult, onGoHome, onOpenSc
       <PageHeader onHomePress={onGoHome} />
 
       <View style={styles.card}>
-        <Text style={styles.cardEyebrow}>Metrics</Text>
-        <Text style={styles.cardTitle}>Jump + Speed</Text>
+        <Text style={styles.cardEyebrow}>Tabulated Figures</Text>
+        <Text style={styles.cardTitle}>Motion Stats</Text>
         <Text style={styles.cardCopy}>
-          This page gives every current stat back to the user as a readable assessment, not just raw math.
+          This page gathers the current rep figures into one place so the coach can see the whole motion profile at once.
         </Text>
       </View>
 
@@ -102,9 +102,9 @@ export function MetricsScreen({analysisInput, analysisResult, onGoHome, onOpenSc
           </View>
 
           <View style={styles.sectionCard}>
-            <Text style={styles.sectionTitle}>Session Assessment</Text>
+            <Text style={styles.sectionTitle}>Current Rep Breakdown</Text>
             <Text style={styles.sectionCopy}>
-              Every marker entered from the rep is assessed below so the player can see what is strong, what needs cleanup, and why.
+              Every current figure is tabulated below so the rep can be reviewed as a full motion snapshot instead of a single number.
             </Text>
           </View>
 
@@ -129,14 +129,15 @@ export function MetricsScreen({analysisInput, analysisResult, onGoHome, onOpenSc
         </>
       ) : (
         <View style={styles.emptyCard}>
-          <Text style={styles.emptyTitle}>No metrics yet</Text>
+          <Text style={styles.emptyTitle}>No stats yet</Text>
           <Text style={styles.emptyBody}>Run the Motion Lab analysis to populate this page.</Text>
         </View>
       )}
 
       <View style={styles.buttonStack}>
-        <NeonButton label="Back To Motion Lab" onPress={() => onOpenScreen('motion-lab')} />
-        <NeonButton label="Open Playback" onPress={() => onOpenScreen('neon-playback')} tone="secondary" />
+        <NeonButton label="Open Recorder" onPress={() => onOpenScreen('motion-lab')} />
+        <NeonButton label="Open Swing Tracker" onPress={() => onOpenScreen('swing-tracker')} tone="secondary" />
+        <NeonButton label="Open Ball Speed" onPress={() => onOpenScreen('ball-speed-tool')} tone="secondary" />
       </View>
     </ScrollView>
   );

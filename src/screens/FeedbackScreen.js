@@ -1,4 +1,4 @@
-import {ScrollView, StyleSheet, Text, View} from 'react-native';
+﻿import {ScrollView, StyleSheet, Text, View} from 'react-native';
 
 import {NeonButton} from '../components/NeonButton';
 import {PageHeader} from '../components/PageHeader';
@@ -7,17 +7,13 @@ import {colors, neonShadow, radii, spacing} from '../theme/theme';
 export function FeedbackScreen({analysisResult, onGoHome, onOpenScreen}) {
   return (
     <ScrollView style={styles.safeArea} contentContainerStyle={styles.content}>
-      <PageHeader
-        onHomePress={onGoHome}
-        subtitle="Read the current correction cues generated from the active analysis session."
-        title="Swing Feedback"
-      />
+      <PageHeader onHomePress={onGoHome} />
 
       <View style={styles.card}>
-        <Text style={styles.cardEyebrow}>Advice Engine</Text>
-        <Text style={styles.cardTitle}>Correction Cues</Text>
+        <Text style={styles.cardEyebrow}>Corrections</Text>
+        <Text style={styles.cardTitle}>Swing Feedback</Text>
         <Text style={styles.cardCopy}>
-          This page translates the active session into clear coaching language instead of raw numbers alone.
+          This tool turns the current rep into simple coaching language so the player knows what to fix on the next swing.
         </Text>
       </View>
 
@@ -30,14 +26,15 @@ export function FeedbackScreen({analysisResult, onGoHome, onOpenScreen}) {
         ))
       ) : (
         <View style={styles.emptyCard}>
-          <Text style={styles.emptyTitle}>No advice yet</Text>
-          <Text style={styles.emptyBody}>Run the session analysis in Motion Lab to generate correction cues here.</Text>
+          <Text style={styles.emptyTitle}>No feedback yet</Text>
+          <Text style={styles.emptyBody}>Run the session analysis in the recorder to generate correction cues here.</Text>
         </View>
       )}
 
       <View style={styles.buttonStack}>
-        <NeonButton label="Back To Motion Lab" onPress={() => onOpenScreen('motion-lab')} />
-        <NeonButton label="Open Metrics" onPress={() => onOpenScreen('jump-speed')} tone="secondary" />
+        <NeonButton label="Open Recorder" onPress={() => onOpenScreen('motion-lab')} />
+        <NeonButton label="Open Swing Tracker" onPress={() => onOpenScreen('swing-tracker')} tone="secondary" />
+        <NeonButton label="Open Motion Stats" onPress={() => onOpenScreen('motion-stats')} tone="secondary" />
       </View>
     </ScrollView>
   );

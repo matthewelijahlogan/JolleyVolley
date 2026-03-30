@@ -1,4 +1,4 @@
-import {ScrollView, StyleSheet, Text, View} from 'react-native';
+﻿import {ScrollView, StyleSheet, Text, View} from 'react-native';
 import Video from 'react-native-video';
 
 import {NeonButton} from '../components/NeonButton';
@@ -10,20 +10,37 @@ function TrailDot({style, glow = 'pink'}) {
   return <View style={[styles.trailDot, accent, style]} />;
 }
 
+function HitchFlag({style}) {
+  return (
+    <View style={[styles.hitchFlag, style]}>
+      <Text style={styles.hitchFlagLabel}>HITCH</Text>
+    </View>
+  );
+}
+
+function TrackerStat({label, value}) {
+  return (
+    <View style={styles.statCard}>
+      <Text style={styles.statLabel}>{label}</Text>
+      <Text style={styles.statValue}>{value}</Text>
+    </View>
+  );
+}
+
 export function PlaybackScreen({analysisResult, onGoHome, onOpenScreen, selectedVideo}) {
+  const handTrail = analysisResult?.overlayProfile?.handTrail || [];
+  const ballTrail = analysisResult?.overlayProfile?.ballTrail || [];
+  const hitchPoint = analysisResult?.hitchFrames >= 3 ? handTrail[Math.min(1, handTrail.length - 1)] : null;
+
   return (
     <ScrollView style={styles.safeArea} contentContainerStyle={styles.content}>
-      <PageHeader
-        onHomePress={onGoHome}
-        subtitle="Replay the active clip with the neon overlay preview built from the session analysis."
-        title="Neon Playback"
-      />
+      <PageHeader onHomePress={onGoHome} />
 
       <View style={styles.card}>
-        <Text style={styles.cardEyebrow}>Playback View</Text>
-        <Text style={styles.cardTitle}>Neon Trail Overlay</Text>
+        <Text style={styles.cardEyebrow}>Visual Tool</Text>
+        <Text style={styles.cardTitle}>Swing Tracker</Text>
         <Text style={styles.cardCopy}>
-          This page replays the selected clip and paints a neon hand trail plus ball trail using the current analysis profile.
+          This tool shows the hand path through the hitting zone, highlights the current hitch severity, and keeps the tracker tied to the active rep.
         </Text>
       </View>
 
@@ -34,33 +51,52 @@ export function PlaybackScreen({analysisResult, onGoHome, onOpenScreen, selected
               <Video controls paused resizeMode="contain" source={{uri: selectedVideo.uri}} style={styles.video} />
               {analysisResult ? (
                 <View pointerEvents="none" style={styles.overlayLayer}>
-                  {analysisResult.overlayProfile.handTrail.map((point, index) => (
+                  <View style={styles.swingLane} />
+                  <View style={styles.contactGate} />
+                  {handTrail.map((point, index) => (
                     <TrailDot key={`hand-${index}`} style={{left: point.left, top: point.top}} />
                   ))}
-                  {analysisResult.overlayProfile.ballTrail.map((point, index) => (
+                  {ballTrail.map((point, index) => (
                     <TrailDot glow="cyan" key={`ball-${index}`} style={{left: point.left, top: point.top}} />
                   ))}
+                  {hitchPoint ? <HitchFlag style={{left: hitchPoint.left, top: hitchPoint.top}} /> : null}
                 </View>
               ) : null}
             </>
           ) : (
             <View style={styles.emptyFrame}>
               <Text style={styles.emptyTitle}>No clip ready</Text>
-              <Text style={styles.emptyCopy}>Load a video in Motion Lab first, then come back here for the playback overlay.</Text>
+              <Text style={styles.emptyCopy}>Load a video in the recorder first, then come back here for the swing tracker overlay.</Text>
             </View>
           )}
         </View>
       </View>
 
-      <View style={styles.infoCard}>
-        <Text style={styles.infoTitle}>Current Overlay Status</Text>
-        <Text style={styles.infoCopy}>
-          {analysisResult ? analysisResult.summary : 'Analysis has not been run yet for the current session.'}
-        </Text>
-      </View>
+      {analysisResult ? (
+        <>
+          <View style={styles.statGrid}>
+            <TrackerStat label="Hitch Severity" value={analysisResult.hitchSeverity} />
+            <TrackerStat label="Hitch Frames" value={`${analysisResult.hitchFrames}`} />
+            <TrackerStat label="Contact Point" value={analysisResult.contactPoint} />
+            <TrackerStat label="Landing" value={analysisResult.landingStability} />
+          </View>
+
+          <View style={styles.infoCard}>
+            <Text style={styles.infoTitle}>Current Swing Read</Text>
+            <Text style={styles.infoCopy}>
+              {analysisResult.hitchFrames >= 5
+                ? 'The hand path is showing a major pause through the zone. Smooth the acceleration from load to contact.'
+                : analysisResult.hitchFrames >= 3
+                  ? 'There is a visible hitch in the motion, but the path is still recoverable with cleaner sequencing.'
+                  : 'The hand path is moving cleanly through the zone with minimal interruption.'}
+            </Text>
+          </View>
+        </>
+      ) : null}
 
       <View style={styles.buttonStack}>
-        <NeonButton label="Back To Motion Lab" onPress={() => onOpenScreen('motion-lab')} />
+        <NeonButton label="Open Recorder" onPress={() => onOpenScreen('motion-lab')} />
+        <NeonButton label="Open Ball Speed" onPress={() => onOpenScreen('ball-speed-tool')} tone="secondary" />
         <NeonButton label="Open Feedback" onPress={() => onOpenScreen('swing-feedback')} tone="secondary" />
       </View>
     </ScrollView>
@@ -126,6 +162,28 @@ const styles = StyleSheet.create({
   overlayLayer: {
     ...StyleSheet.absoluteFillObject,
   },
+  swingLane: {
+    position: 'absolute',
+    top: '14%',
+    bottom: '12%',
+    left: '43%',
+    width: '18%',
+    borderRadius: radii.md,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 110, 209, 0.24)',
+    backgroundColor: 'rgba(255, 63, 164, 0.06)',
+  },
+  contactGate: {
+    position: 'absolute',
+    top: '32%',
+    left: '54%',
+    width: '18%',
+    height: '10%',
+    borderRadius: radii.round,
+    borderWidth: 1,
+    borderColor: 'rgba(126, 249, 255, 0.42)',
+    backgroundColor: 'rgba(126, 249, 255, 0.08)',
+  },
   trailDot: {
     position: 'absolute',
     width: 20,
@@ -146,6 +204,23 @@ const styles = StyleSheet.create({
     shadowRadius: 16,
     shadowOffset: {width: 0, height: 0},
   },
+  hitchFlag: {
+    position: 'absolute',
+    marginLeft: -18,
+    marginTop: -26,
+    borderRadius: radii.round,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 156, 156, 0.48)',
+    backgroundColor: 'rgba(255, 95, 95, 0.2)',
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 6,
+  },
+  hitchFlagLabel: {
+    color: '#FF9C9C',
+    fontSize: 11,
+    fontWeight: '700',
+    letterSpacing: 1,
+  },
   emptyFrame: {
     flex: 1,
     alignItems: 'center',
@@ -164,6 +239,34 @@ const styles = StyleSheet.create({
     fontSize: 14,
     lineHeight: 21,
     textAlign: 'center',
+  },
+  statGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    marginBottom: spacing.lg,
+  },
+  statCard: {
+    width: '48%',
+    borderRadius: radii.md,
+    borderWidth: 1,
+    borderColor: colors.stroke,
+    backgroundColor: 'rgba(27, 7, 36, 0.92)',
+    padding: spacing.md,
+    marginBottom: spacing.md,
+  },
+  statLabel: {
+    color: colors.textMuted,
+    fontSize: 12,
+    textTransform: 'uppercase',
+    letterSpacing: 1.1,
+    marginBottom: 6,
+  },
+  statValue: {
+    color: colors.text,
+    fontFamily: 'Bangers',
+    fontSize: 28,
+    letterSpacing: 0.7,
   },
   infoCard: {
     borderRadius: radii.md,

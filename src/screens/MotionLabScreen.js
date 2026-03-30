@@ -101,10 +101,10 @@ export function MotionLabScreen({
       <PageHeader onHomePress={onGoHome} />
 
       <View style={styles.card}>
-        <Text style={styles.cardEyebrow}>Recorder</Text>
-        <Text style={styles.cardTitle}>Motion Lab</Text>
+        <Text style={styles.cardEyebrow}>Capture</Text>
+        <Text style={styles.cardTitle}>Recorder</Text>
         <Text style={styles.cardCopy}>
-          Record or import a rep, set the motion markers, and let the app score the current clip.
+          Record or import a rep, set the sample fields, then open the Swing Tracker, Ball Speed, and Motion Stats tools from the same clip.
         </Text>
       </View>
 
@@ -133,7 +133,7 @@ export function MotionLabScreen({
           </>
         ) : (
           <Text style={styles.emptyCopy}>
-            No clip selected yet. Record a player or import a rep from the phone to start the analysis flow.
+            No clip selected yet. Record a player or import a rep from the phone to start the Motion Lab tools.
           </Text>
         )}
       </View>
@@ -212,9 +212,10 @@ export function MotionLabScreen({
 
       <View style={styles.buttonStack}>
         <NeonButton label="Run Analysis" onPress={onRunAnalysis} />
-        <NeonButton label="Open Playback" onPress={() => onOpenScreen('neon-playback')} tone="secondary" />
+        <NeonButton label="Open Swing Tracker" onPress={() => onOpenScreen('swing-tracker')} tone="secondary" />
+        <NeonButton label="Open Ball Speed" onPress={() => onOpenScreen('ball-speed-tool')} tone="secondary" />
+        <NeonButton label="Open Motion Stats" onPress={() => onOpenScreen('motion-stats')} tone="secondary" />
         <NeonButton label="Open Feedback" onPress={() => onOpenScreen('swing-feedback')} tone="secondary" />
-        <NeonButton label="Open Metrics" onPress={() => onOpenScreen('jump-speed')} tone="secondary" />
       </View>
 
       {analysisResult ? (
@@ -222,7 +223,7 @@ export function MotionLabScreen({
           <Text style={styles.cardEyebrow}>Current Result</Text>
           <Text style={styles.resultSummary}>{analysisResult.summary}</Text>
           <Text style={styles.resultCopy}>
-            The computer is assessing the current session and can return the full breakdown in Jump + Speed.
+            The active rep is ready to review in the Swing Tracker, Ball Speed, Motion Stats, and Feedback tools.
           </Text>
 
           <View style={styles.assessmentWrap}>
