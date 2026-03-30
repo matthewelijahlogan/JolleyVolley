@@ -1,101 +1,116 @@
 export const scoreboardSnapshot = {
-  matchup: "Jolley Squad vs. Varsity Edge",
-  setCount: "2 - 1",
-  currentScore: "23 - 19",
-  possession: "Jolley Squad ball",
-  rotation: "Serve Receive 4",
-  momentum: "+12% attack efficiency",
+  matchup: 'Jolley Squad vs. Varsity Edge',
+  setCount: '2 - 1',
+  currentScore: '23 - 19',
+  possession: 'Jolley Squad ball',
+  rotation: 'Serve Receive 4',
+  momentum: '+12% attack efficiency',
 };
-
-export const statHighlights = [
-  {
-    label: "Vertical Leap",
-    value: "31.4 in",
-    detail: "Approach load, plant timing, and lift height can be tracked per athlete session.",
-  },
-  {
-    label: "Ball Speed",
-    value: "47 MPH",
-    detail: "Post-contact speed gives coaches a quick read on power transfer off the swing.",
-  },
-  {
-    label: "Swing Hitch",
-    value: "3 frames",
-    detail: "Playback can spotlight where the hand path hesitates before or through contact.",
-  },
-];
 
 export const menuSections = [
   {
-    id: "motion-lab",
-    label: "Motion Lab",
-    eyebrow: "Recorder",
-    preview: "Capture approach, jump, and swing sessions.",
+    id: 'motion-lab',
+    label: 'Motion Lab',
+    eyebrow: 'Recorder',
+    preview: 'Capture approach, jump, and swing sessions.',
     description:
-      "Record athletes during reps so Jolley Volley can study timing, body position, and contact sequence from a clean practice workflow.",
+      'Record or import a player clip, mark a few key motion details, and run Jolley Volley analysis on the rep.',
     bullets: [
-      "Tag the athlete before recording",
-      "Capture jumps, approaches, and full swings",
-      "Save clips for replay and comparison",
+      'Record video or import from the phone',
+      'Track jump and swing session details',
+      'Launch the analysis workflow from the clip',
     ],
+    openLabel: 'Open Motion Lab',
   },
   {
-    id: "neon-playback",
-    label: "Neon Playback",
-    eyebrow: "Trail View",
-    preview: "Show glowing hand and ball trails in replay.",
+    id: 'neon-playback',
+    label: 'Neon Playback',
+    eyebrow: 'Trail View',
+    preview: 'Replay the clip with glowing overlays.',
     description:
-      "Playback is designed to trace the hitter's hand path and then the ball path in neon so coaches can spot hitches, drift, or broken acceleration more easily.",
+      'Review the current clip in a playback view with a neon hand path and ball path overlay shaped by the analysis session.',
     bullets: [
-      "Hand trail before contact",
-      "Ball trail after contact",
-      "Frame-by-frame hitch spotting",
+      'Hand trail before contact',
+      'Ball trail after contact',
+      'Visual hitch spotting during replay',
     ],
+    openLabel: 'Open Playback',
   },
   {
-    id: "swing-feedback",
-    label: "Swing Feedback",
-    eyebrow: "AI Review",
-    preview: "Return a likely correction cue after the rep.",
+    id: 'swing-feedback',
+    label: 'Swing Feedback',
+    eyebrow: 'AI Advice',
+    preview: 'Read correction cues and rep notes.',
     description:
-      "The swing engine will compare the rep against healthy timing and sequencing patterns, then surface a plain-language correction when something looks off.",
+      'Turn the session data into simple correction cues a player can actually try on the next ball.',
     bullets: [
-      "Find timing or path breakdowns",
-      "Estimate likely mechanical cause",
-      "Suggest one correction to try next",
+      'Spot timing breakdowns',
+      'Show the likely mechanical issue',
+      'Return a clear next-step cue',
     ],
+    openLabel: 'Open Feedback',
   },
   {
-    id: "jump-speed",
-    label: "Jump + Speed",
-    eyebrow: "Metrics",
-    preview: "Estimate vertical leap and ball MPH.",
+    id: 'jump-speed',
+    label: 'Jump + Speed',
+    eyebrow: 'Metrics',
+    preview: 'Estimate vertical leap and ball MPH.',
     description:
-      "This module is meant to turn video into athlete feedback by estimating vertical leap, contact timing, and the ball speed coming off the swing.",
+      'Surface the athlete metrics tied to the current clip, including vertical leap, hitch severity, and ball speed estimate.',
     bullets: [
-      "Vertical leap estimate",
-      "Ball speed estimate in MPH",
-      "Session-to-session progress tracking",
+      'Vertical leap estimate',
+      'Ball speed estimate in MPH',
+      'Session metric breakdown',
     ],
+    openLabel: 'Open Metrics',
   },
   {
-    id: "coach-board",
-    label: "Coach Board",
-    eyebrow: "Scorecard",
-    preview: "Track score, possession, and key volleyball stats.",
+    id: 'coach-board',
+    label: 'Coach Board',
+    eyebrow: 'Scorecard',
+    preview: 'Track score, possession, and team stats.',
     description:
-      "The coach board is meant to stay fast and simple during live action, making it easy to log score, possession, and the popular team stats that matter most.",
+      'Keep a clean courtside scoreboard with possession, set totals, and the most common volleyball stat counters.',
     bullets: [
-      "Score and set tracking",
-      "Possession and rotation context",
-      "Popular volleyball stat logging",
+      'Track live score and sets',
+      'Toggle possession quickly',
+      'Count kills, aces, blocks, digs, and assists',
     ],
+    openLabel: 'Open Coach Board',
   },
 ];
 
-export const actionChips = [
-  "Start recorder",
-  "Open scorecard",
-  "Review latest swing",
-  "Tag athlete session",
+export const homeQuickActions = [
+  {label: 'Motion Lab', screen: 'motion-lab'},
+  {label: 'Coach Board', screen: 'coach-board'},
+  {label: 'Playback', screen: 'neon-playback'},
+  {label: 'Feedback', screen: 'swing-feedback'},
 ];
+
+export const initialAnalysisInput = {
+  standingReachInches: '90',
+  contactReachInches: '121.4',
+  ballTravelFeet: '32',
+  releaseFrames: '15',
+  fps: '240',
+  hitchFrames: '3',
+  contactPoint: 'behind',
+  landingStability: 'off-balance',
+};
+
+export const initialCoachBoard = {
+  homeTeam: 'Jolley Squad',
+  awayTeam: 'Varsity Edge',
+  homeScore: 23,
+  awayScore: 19,
+  homeSets: 2,
+  awaySets: 1,
+  possession: 'home',
+  stats: {
+    kills: 18,
+    aces: 5,
+    blocks: 7,
+    digs: 14,
+    assists: 21,
+  },
+};
