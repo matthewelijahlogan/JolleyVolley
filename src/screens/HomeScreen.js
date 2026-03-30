@@ -1,8 +1,10 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   Animated,
   Image,
+  Modal,
   Platform,
+  Pressable,
   SafeAreaView,
   ScrollView,
   StyleSheet,
@@ -12,12 +14,11 @@ import {
 
 import {
   actionChips,
-  analyzerModules,
+  menuSections,
   scoreboardSnapshot,
   statHighlights,
 } from "../data/dashboard";
 import { GlowChip } from "../components/GlowChip";
-import { FeatureCard } from "../components/FeatureCard";
 import { colors, neonShadow, radii, spacing } from "../theme/theme";
 
 const logoSource = require("../../assets/images/logo.png");
@@ -25,6 +26,7 @@ const iconSource = require("../../assets/images/icon.png");
 
 export function HomeScreen() {
   const logoOpacity = useRef(new Animated.Value(0)).current;
+  const [selectedMenuItem, setSelectedMenuItem] = useState(null);
 
   useEffect(() => {
     const animation = Animated.loop(
@@ -49,6 +51,10 @@ export function HomeScreen() {
       animation.stop();
     };
   }, [logoOpacity]);
+
+  const closeMenuModal = () => {
+    setSelectedMenuItem(null);
+  };
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -79,6 +85,34 @@ export function HomeScreen() {
           <Text style={styles.heroTitle}>Record the rep, score the rally, coach the correction.</Text>
           <Text style={styles.heroCopy}>
             Jolley Volley is being built to help coaches record players, highlight swing and ball movement with neon playback trails, estimate vertical leap and ball speed, suggest mechanical corrections, and keep score plus popular volleyball stats without friction.
+          </Text>
+        </View>
+
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>Main Menu</Text>
+          <Text style={styles.sectionCopy}>
+            Tap a module to open a detail card and see exactly what that part of the app is meant to do.
+          </Text>
+        </View>
+
+        <View style={styles.menuGrid}>
+          {menuSections.map((item) => (
+            <Pressable
+              key={item.id}
+              onPress={() => setSelectedMenuItem(item)}
+              style={({ pressed }) => [styles.menuItem, pressed && styles.menuItemPressed]}
+            >
+              <Text style={styles.menuEyebrow}>{item.eyebrow}</Text>
+              <Text style={styles.menuTitle}>{item.label}</Text>
+              <Text style={styles.menuPreview}>{item.preview}</Text>
+            </Pressable>
+          ))}
+        </View>
+
+        <View style={styles.menuHintCard}>
+          <Text style={styles.menuHintTitle}>Menu-driven flow</Text>
+          <Text style={styles.menuHintCopy}>
+            This home screen now works more like a launcher. The previews stay light here, and the deeper explanation pops up only when a coach taps the module they want.
           </Text>
         </View>
 
@@ -117,7 +151,7 @@ export function HomeScreen() {
 
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>Motion Metrics</Text>
-          <Text style={styles.sectionCopy}>The first three athlete feedback numbers this app is aiming to surface clearly.</Text>
+          <Text style={styles.sectionCopy}>Quick preview numbers stay visible while the menu popups handle the deeper explanation.</Text>
         </View>
 
         <View style={styles.statGrid}>
@@ -130,38 +164,49 @@ export function HomeScreen() {
           ))}
         </View>
 
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Recorder Intelligence</Text>
-          <Text style={styles.sectionCopy}>
-            Framework cards for capture, neon playback overlays, and AI-driven swing feedback.
-          </Text>
-        </View>
-
-        <View style={styles.featureStack}>
-          {analyzerModules.map((module) => (
-            <FeatureCard
-              key={module.title}
-              eyebrow={module.eyebrow}
-              title={module.title}
-              description={module.description}
-              bullets={module.bullets}
-            />
-          ))}
-        </View>
-
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Quick Start</Text>
-          <Text style={styles.sectionCopy}>
-            Placeholder entry points for the recorder, playback, and scorekeeping flow.
-          </Text>
-        </View>
-
         <View style={styles.chipWrap}>
           {actionChips.map((chip) => (
             <GlowChip key={chip} label={chip} />
           ))}
         </View>
       </ScrollView>
+
+      <Modal
+        animationType="fade"
+        onRequestClose={closeMenuModal}
+        transparent
+        visible={Boolean(selectedMenuItem)}
+      >
+        <View style={styles.modalOverlay}>
+          <Pressable onPress={closeMenuModal} style={StyleSheet.absoluteFillObject} />
+          {selectedMenuItem ? (
+            <View style={styles.modalCard}>
+              <View style={styles.modalHeader}>
+                <View style={styles.modalTitleWrap}>
+                  <Text style={styles.modalEyebrow}>{selectedMenuItem.eyebrow}</Text>
+                  <Text style={styles.modalTitle}>{selectedMenuItem.label}</Text>
+                </View>
+                <Pressable onPress={closeMenuModal} style={styles.modalClose}>
+                  <Text style={styles.modalCloseLabel}>Close</Text>
+                </Pressable>
+              </View>
+
+              <Text style={styles.modalDescription}>
+                {selectedMenuItem.description}
+              </Text>
+
+              <View style={styles.modalBulletList}>
+                {selectedMenuItem.bullets.map((bullet) => (
+                  <View key={bullet} style={styles.modalBulletRow}>
+                    <View style={styles.modalBulletDot} />
+                    <Text style={styles.modalBulletLabel}>{bullet}</Text>
+                  </View>
+                ))}
+              </View>
+            </View>
+          ) : null}
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -289,6 +334,65 @@ const styles = StyleSheet.create({
     lineHeight: 23,
     textAlign: "center",
   },
+  menuGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "space-between",
+    gap: spacing.md,
+    marginBottom: spacing.lg,
+  },
+  menuItem: {
+    width: "47.5%",
+    borderRadius: radii.md,
+    borderWidth: 1,
+    borderColor: colors.stroke,
+    backgroundColor: "rgba(27, 7, 36, 0.92)",
+    padding: spacing.md,
+    minHeight: 138,
+    ...neonShadow,
+  },
+  menuItemPressed: {
+    transform: [{ scale: 0.98 }],
+    backgroundColor: "rgba(44, 10, 51, 0.96)",
+  },
+  menuEyebrow: {
+    color: colors.accent,
+    fontSize: 11,
+    letterSpacing: 1.4,
+    textTransform: "uppercase",
+    marginBottom: 6,
+  },
+  menuTitle: {
+    color: colors.text,
+    fontFamily: "Bangers",
+    fontSize: 24,
+    letterSpacing: 0.7,
+    marginBottom: spacing.xs,
+  },
+  menuPreview: {
+    color: colors.textMuted,
+    fontSize: 13,
+    lineHeight: 19,
+  },
+  menuHintCard: {
+    borderRadius: radii.md,
+    borderWidth: 1,
+    borderColor: "rgba(126, 249, 255, 0.18)",
+    backgroundColor: "rgba(17, 11, 28, 0.88)",
+    padding: spacing.md,
+    marginBottom: spacing.xl,
+  },
+  menuHintTitle: {
+    color: colors.primarySoft,
+    fontSize: 15,
+    fontWeight: "700",
+    marginBottom: 6,
+  },
+  menuHintCopy: {
+    color: colors.textDim,
+    fontSize: 13,
+    lineHeight: 20,
+  },
   sectionHeader: {
     marginBottom: spacing.md,
   },
@@ -392,13 +496,94 @@ const styles = StyleSheet.create({
     fontSize: 13,
     lineHeight: 20,
   },
-  featureStack: {
-    gap: spacing.md,
-    marginBottom: spacing.xl,
-  },
   chipWrap: {
     flexDirection: "row",
     flexWrap: "wrap",
     gap: spacing.sm,
+    marginBottom: spacing.xl,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(5, 1, 10, 0.74)",
+    paddingHorizontal: spacing.lg,
+    justifyContent: "center",
+  },
+  modalCard: {
+    borderRadius: radii.lg,
+    borderWidth: 1,
+    borderColor: colors.stroke,
+    backgroundColor: "rgba(19, 8, 31, 0.98)",
+    padding: spacing.lg,
+    ...neonShadow,
+  },
+  modalHeader: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    justifyContent: "space-between",
+    marginBottom: spacing.md,
+  },
+  modalTitleWrap: {
+    flex: 1,
+    paddingRight: spacing.sm,
+  },
+  modalEyebrow: {
+    color: colors.accent,
+    fontSize: 12,
+    letterSpacing: 1.5,
+    textTransform: "uppercase",
+    marginBottom: 6,
+  },
+  modalTitle: {
+    color: colors.text,
+    fontFamily: "Bangers",
+    fontSize: 34,
+    letterSpacing: 0.8,
+  },
+  modalClose: {
+    borderRadius: radii.round,
+    borderWidth: 1,
+    borderColor: "rgba(255, 110, 209, 0.35)",
+    paddingHorizontal: spacing.md,
+    paddingVertical: 10,
+    backgroundColor: "rgba(255, 63, 164, 0.1)",
+  },
+  modalCloseLabel: {
+    color: colors.text,
+    fontSize: 12,
+    letterSpacing: 0.5,
+    textTransform: "uppercase",
+  },
+  modalDescription: {
+    color: colors.textMuted,
+    fontSize: 15,
+    lineHeight: 23,
+    marginBottom: spacing.md,
+  },
+  modalBulletList: {
+    gap: spacing.sm,
+  },
+  modalBulletRow: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  modalBulletDot: {
+    width: 9,
+    height: 9,
+    borderRadius: radii.round,
+    backgroundColor: colors.primaryBright,
+    marginRight: spacing.sm,
+    shadowColor: colors.primaryBright,
+    shadowOpacity: 0.65,
+    shadowRadius: 10,
+    shadowOffset: {
+      width: 0,
+      height: 0,
+    },
+  },
+  modalBulletLabel: {
+    color: colors.text,
+    fontSize: 14,
+    flex: 1,
+    lineHeight: 21,
   },
 });

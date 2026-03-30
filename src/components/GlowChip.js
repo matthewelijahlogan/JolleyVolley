@@ -2,9 +2,9 @@ import { Pressable, StyleSheet, Text } from "react-native";
 
 import { colors, radii, spacing } from "../theme/theme";
 
-export function GlowChip({ label }) {
+export function GlowChip({ label, onPress }) {
   return (
-    <Pressable style={styles.chip}>
+    <Pressable onPress={onPress} style={styles.chip}>
       <Text style={styles.label}>{label}</Text>
     </Pressable>
   );

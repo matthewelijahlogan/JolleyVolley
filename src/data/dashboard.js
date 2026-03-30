@@ -25,26 +25,77 @@ export const statHighlights = [
   },
 ];
 
-export const analyzerModules = [
+export const menuSections = [
   {
-    title: "Recorder + Neon Trail",
-    eyebrow: "Live Motion Capture",
+    id: "motion-lab",
+    label: "Motion Lab",
+    eyebrow: "Recorder",
+    preview: "Capture approach, jump, and swing sessions.",
     description:
-      "Record athletes through approach, jump, and arm swing while rendering a neon motion trail from the hands into the ball path.",
-    bullets: ["Hand trail overlay", "Ball trail after contact", "Frame-by-frame playback"],
+      "Record athletes during reps so Jolley Volley can study timing, body position, and contact sequence from a clean practice workflow.",
+    bullets: [
+      "Tag the athlete before recording",
+      "Capture jumps, approaches, and full swings",
+      "Save clips for replay and comparison",
+    ],
   },
   {
-    title: "Correction Engine",
-    eyebrow: "AI Swing Review",
+    id: "neon-playback",
+    label: "Neon Playback",
+    eyebrow: "Trail View",
+    preview: "Show glowing hand and ball trails in replay.",
     description:
-      "Analyze mechanics, estimate likely causes of hitches or timing issues, and return a simple correction cue the player can test next rep.",
-    bullets: ["Potential fault callout", "Suggested correction cue", "Confidence trend by session"],
+      "Playback is designed to trace the hitter's hand path and then the ball path in neon so coaches can spot hitches, drift, or broken acceleration more easily.",
+    bullets: [
+      "Hand trail before contact",
+      "Ball trail after contact",
+      "Frame-by-frame hitch spotting",
+    ],
+  },
+  {
+    id: "swing-feedback",
+    label: "Swing Feedback",
+    eyebrow: "AI Review",
+    preview: "Return a likely correction cue after the rep.",
+    description:
+      "The swing engine will compare the rep against healthy timing and sequencing patterns, then surface a plain-language correction when something looks off.",
+    bullets: [
+      "Find timing or path breakdowns",
+      "Estimate likely mechanical cause",
+      "Suggest one correction to try next",
+    ],
+  },
+  {
+    id: "jump-speed",
+    label: "Jump + Speed",
+    eyebrow: "Metrics",
+    preview: "Estimate vertical leap and ball MPH.",
+    description:
+      "This module is meant to turn video into athlete feedback by estimating vertical leap, contact timing, and the ball speed coming off the swing.",
+    bullets: [
+      "Vertical leap estimate",
+      "Ball speed estimate in MPH",
+      "Session-to-session progress tracking",
+    ],
+  },
+  {
+    id: "coach-board",
+    label: "Coach Board",
+    eyebrow: "Scorecard",
+    preview: "Track score, possession, and key volleyball stats.",
+    description:
+      "The coach board is meant to stay fast and simple during live action, making it easy to log score, possession, and the popular team stats that matter most.",
+    bullets: [
+      "Score and set tracking",
+      "Possession and rotation context",
+      "Popular volleyball stat logging",
+    ],
   },
 ];
 
 export const actionChips = [
   "Start recorder",
-  "Review playback",
-  "Log score + stats",
+  "Open scorecard",
+  "Review latest swing",
   "Tag athlete session",
 ];
