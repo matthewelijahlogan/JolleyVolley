@@ -1,23 +1,23 @@
 # Jolley Volley
 
-Jolley Volley is the first framework pass for a neon-styled React Native application focused on:
+Jolley Volley is a standalone React Native volleyball app framework focused on:
 
-- viable live scoring
-- player statistics
-- jump analysis
-- swing analysis
+- coach-friendly score and possession tracking
+- popular volleyball stat logging
+- player recording, playback, and motion review
+- AI/ML-ready swing and jump analysis workflows
 
 ## Current scaffold
 
-- Expo + React Native app shell in vanilla JavaScript
-- branded landing screen with `Bangers` typography
-- fixed top icon using `assets/images/icon.png`
-- animated fading logo using `assets/images/logo.png`
-- placeholder cards for scoring, stats, jump analysis, and swing analysis
+- bare React Native Android app structure for standalone device testing
+- neon hot-pink branded home screen with fixed top icon and fading logo
+- motion lab section for recording, playback trail ideas, vertical leap, ball speed, and correction cues
+- coach scorecard section for score, possession, and stat tracking
 
 ## Local start
 
 ```bash
 npm install
 npm run start
+npm run android
 ```

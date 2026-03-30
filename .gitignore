@@ -14,3 +14,7 @@ android/local.properties
 .cxx/
 *.keystore
 !android/app/debug.keystore
+_rncli_seed/
+_rncli_seed_hw/
+_android_bare/
+_expo_android_backup/

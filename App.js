@@ -1,20 +1,12 @@
-import { useFonts } from "expo-font";
-import { StatusBar } from "expo-status-bar";
+import React from 'react';
+import {StatusBar} from 'react-native';
 
-import { HomeScreen } from "./src/screens/HomeScreen";
+import {HomeScreen} from './src/screens/HomeScreen';
 
 export default function App() {
-  const [fontsLoaded] = useFonts({
-    Bangers: require("./assets/fonts/Bangers.ttf"),
-  });
-
-  if (!fontsLoaded) {
-    return null;
-  }
-
   return (
     <>
-      <StatusBar style="light" />
+      <StatusBar barStyle="light-content" backgroundColor="#09020F" />
       <HomeScreen />
     </>
   );

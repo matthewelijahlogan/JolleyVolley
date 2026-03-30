@@ -61,7 +61,7 @@ export function HomeScreen() {
         </View>
         <View>
           <Text style={styles.headerTitle}>Jolley Volley</Text>
-          <Text style={styles.headerSubtitle}>Score. Study. Soar.</Text>
+          <Text style={styles.headerSubtitle}>Track. Trail. Correct.</Text>
         </View>
       </View>
 
@@ -70,22 +70,21 @@ export function HomeScreen() {
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.heroCard}>
-          <Text style={styles.heroEyebrow}>Neon Volleyball Intelligence</Text>
+          <Text style={styles.heroEyebrow}>Standalone Volleyball Intelligence</Text>
           <Animated.Image
             source={logoSource}
             resizeMode="contain"
             style={[styles.heroLogo, { opacity: logoOpacity }]}
           />
-          <Text style={styles.heroTitle}>Train the full game from scoreline to swing path.</Text>
+          <Text style={styles.heroTitle}>Record the rep, score the rally, coach the correction.</Text>
           <Text style={styles.heroCopy}>
-            Jolley Volley is designed to track viable volleyball scoring, player statistics,
-            and motion analysis so each athlete gets clearer feedback during practice and match play.
+            Jolley Volley is being built to help coaches record players, highlight swing and ball movement with neon playback trails, estimate vertical leap and ball speed, suggest mechanical corrections, and keep score plus popular volleyball stats without friction.
           </Text>
         </View>
 
         <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Live Match Board</Text>
-          <Text style={styles.sectionCopy}>Fast-glance scoring designed for courtside use.</Text>
+          <Text style={styles.sectionTitle}>Coach Scorecard</Text>
+          <Text style={styles.sectionCopy}>Fast-glance score, possession, and rally context for match tracking.</Text>
         </View>
 
         <View style={styles.scoreCard}>
@@ -103,6 +102,10 @@ export function HomeScreen() {
           </View>
 
           <View style={styles.scoreMetaRow}>
+            <Text style={styles.scoreMetaLabel}>Possession</Text>
+            <Text style={styles.scoreMetaValue}>{scoreboardSnapshot.possession}</Text>
+          </View>
+          <View style={styles.scoreMetaRow}>
             <Text style={styles.scoreMetaLabel}>Rotation</Text>
             <Text style={styles.scoreMetaValue}>{scoreboardSnapshot.rotation}</Text>
           </View>
@@ -113,8 +116,8 @@ export function HomeScreen() {
         </View>
 
         <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Stat Snapshot</Text>
-          <Text style={styles.sectionCopy}>A first frame for match analytics and player growth.</Text>
+          <Text style={styles.sectionTitle}>Motion Metrics</Text>
+          <Text style={styles.sectionCopy}>The first three athlete feedback numbers this app is aiming to surface clearly.</Text>
         </View>
 
         <View style={styles.statGrid}>
@@ -128,9 +131,9 @@ export function HomeScreen() {
         </View>
 
         <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Performance Lab</Text>
+          <Text style={styles.sectionTitle}>Recorder Intelligence</Text>
           <Text style={styles.sectionCopy}>
-            Foundation cards for the AI/ML tools that will study jump and swing mechanics.
+            Framework cards for capture, neon playback overlays, and AI-driven swing feedback.
           </Text>
         </View>
 
@@ -149,7 +152,7 @@ export function HomeScreen() {
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>Quick Start</Text>
           <Text style={styles.sectionCopy}>
-            Placeholder actions for the workflow we can wire up next.
+            Placeholder entry points for the recorder, playback, and scorekeeping flow.
           </Text>
         </View>
 

@@ -2,47 +2,49 @@ export const scoreboardSnapshot = {
   matchup: "Jolley Squad vs. Varsity Edge",
   setCount: "2 - 1",
   currentScore: "23 - 19",
+  possession: "Jolley Squad ball",
   rotation: "Serve Receive 4",
   momentum: "+12% attack efficiency",
 };
 
 export const statHighlights = [
   {
-    label: "Kills",
-    value: "18",
-    detail: "High-contact confidence across zones 2 and 4.",
+    label: "Vertical Leap",
+    value: "31.4 in",
+    detail: "Approach load, plant timing, and lift height can be tracked per athlete session.",
   },
   {
-    label: "Blocks",
-    value: "7",
-    detail: "Closing seam timing is trending sharper this session.",
+    label: "Ball Speed",
+    value: "47 MPH",
+    detail: "Post-contact speed gives coaches a quick read on power transfer off the swing.",
   },
   {
-    label: "Aces",
-    value: "5",
-    detail: "Float serve placement is pulling passers off the line.",
+    label: "Swing Hitch",
+    value: "3 frames",
+    detail: "Playback can spotlight where the hand path hesitates before or through contact.",
   },
 ];
 
 export const analyzerModules = [
   {
-    title: "Swing Analyzer",
-    eyebrow: "AI Motion Review",
+    title: "Recorder + Neon Trail",
+    eyebrow: "Live Motion Capture",
     description:
-      "Frame swing path, shoulder timing, and follow-through so training suggestions stay specific.",
-    bullets: ["Arm speed window", "Contact point map", "Approach-to-swing sync"],
+      "Record athletes through approach, jump, and arm swing while rendering a neon motion trail from the hands into the ball path.",
+    bullets: ["Hand trail overlay", "Ball trail after contact", "Frame-by-frame playback"],
   },
   {
-    title: "Jump Analyzer",
-    eyebrow: "Explosive Lift Tracking",
+    title: "Correction Engine",
+    eyebrow: "AI Swing Review",
     description:
-      "Capture loading mechanics, vertical output, and landing stability to guide safer gains.",
-    bullets: ["Plant balance", "Vertical trend", "Landing control"],
+      "Analyze mechanics, estimate likely causes of hitches or timing issues, and return a simple correction cue the player can test next rep.",
+    bullets: ["Potential fault callout", "Suggested correction cue", "Confidence trend by session"],
   },
 ];
 
 export const actionChips = [
-  "Create practice profile",
-  "Start live scoring",
-  "Upload athlete video",
+  "Start recorder",
+  "Review playback",
+  "Log score + stats",
+  "Tag athlete session",
 ];
