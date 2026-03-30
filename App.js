@@ -1,5 +1,5 @@
-﻿import React, {useEffect, useMemo, useState} from 'react';
-import {StatusBar, View} from 'react-native';
+﻿import React, {useEffect, useMemo, useRef, useState} from 'react';
+import {BackHandler, StatusBar, View} from 'react-native';
 
 import {SplashOverlay} from './src/components/SplashOverlay';
 import {initialAnalysisInput, initialCoachBoard, initialProfiles} from './src/data/dashboard';
@@ -13,6 +13,8 @@ import {MotionLabScreen} from './src/screens/MotionLabScreen';
 import {PlaybackScreen} from './src/screens/PlaybackScreen';
 import {ProfilesScreen} from './src/screens/ProfilesScreen';
 import {runVideoAnalysis} from './src/utils/analysis';
+
+const HOME_SCREEN = 'home';
 
 function buildSessionSnapshot(analysisResult, selectedVideo) {
   return {
@@ -31,22 +33,67 @@ function buildSessionSnapshot(analysisResult, selectedVideo) {
 }
 
 export default function App() {
-  const [activeScreen, setActiveScreen] = useState('home');
+  const [screenStack, setScreenStack] = useState([HOME_SCREEN]);
   const [showSplash, setShowSplash] = useState(true);
   const [selectedVideo, setSelectedVideo] = useState(null);
   const [analysisInput, setAnalysisInput] = useState(initialAnalysisInput);
   const [analysisResult, setAnalysisResult] = useState(() => runVideoAnalysis(initialAnalysisInput));
   const [coachBoard, setCoachBoard] = useState(initialCoachBoard);
   const [profiles, setProfiles] = useState(initialProfiles);
+  const screenStackRef = useRef(screenStack);
+
+  const activeScreen = screenStack[screenStack.length - 1] || HOME_SCREEN;
+
+  useEffect(() => {
+    screenStackRef.current = screenStack;
+  }, [screenStack]);
 
   useEffect(() => {
     setAnalysisResult(runVideoAnalysis(analysisInput));
   }, [analysisInput]);
 
+  useEffect(() => {
+    const subscription = BackHandler.addEventListener('hardwareBackPress', () => {
+      if (showSplash) {
+        return true;
+      }
+
+      if (screenStackRef.current.length > 1) {
+        setScreenStack(current => current.slice(0, -1));
+      }
+
+      return true;
+    });
+
+    return () => {
+      subscription.remove();
+    };
+  }, [showSplash]);
+
+  const navigateToScreen = screen => {
+    setScreenStack(current => {
+      if (!screen || current[current.length - 1] === screen) {
+        return current;
+      }
+
+      return [...current, screen];
+    });
+  };
+
+  const goHome = () => {
+    setScreenStack(current => {
+      if (current[current.length - 1] === HOME_SCREEN) {
+        return current;
+      }
+
+      return [...current, HOME_SCREEN];
+    });
+  };
+
   const sharedScreenProps = useMemo(
     () => ({
-      onGoHome: () => setActiveScreen('home'),
-      onOpenScreen: screen => setActiveScreen(screen),
+      onGoHome: goHome,
+      onOpenScreen: navigateToScreen,
     }),
     [],
   );
@@ -112,7 +159,7 @@ export default function App() {
     );
   };
 
-  let screen = <HomeScreen onOpenScreen={setActiveScreen} />;
+  let screen = <HomeScreen onOpenScreen={navigateToScreen} />;
 
   if (activeScreen === 'motion-lab-menu') {
     screen = <MotionLabMenuScreen {...sharedScreenProps} />;
