@@ -1,4 +1,4 @@
-const FEET_PER_MPH_SECOND = 1.46667;
+﻿const FEET_PER_MPH_SECOND = 1.46667;
 
 function toNumber(value) {
   const parsed = parseFloat(value);
@@ -7,6 +7,41 @@ function toNumber(value) {
 
 function toFixedNumber(value, digits) {
   return Number.isFinite(value) ? Number(value.toFixed(digits)) : 0;
+}
+
+function hasRawValue(value) {
+  return `${value ?? ''}`.trim().length > 0;
+}
+
+function formatFrames(frames) {
+  return `${toFixedNumber(frames, 0)} frames`;
+}
+
+function formatContactPoint(value) {
+  if (value === 'in-front') {
+    return 'In Front';
+  }
+
+  if (value === 'behind') {
+    return 'Behind';
+  }
+
+  return 'Ideal';
+}
+
+function formatLandingStability(value) {
+  return value === 'off-balance' ? 'Off Balance' : 'Steady';
+}
+
+function createAssessment(label, value, status, note, tone = 'neutral') {
+  return {
+    id: label.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
+    label,
+    value,
+    status,
+    note,
+    tone,
+  };
 }
 
 export function runVideoAnalysis(input) {
@@ -18,6 +53,13 @@ export function runVideoAnalysis(input) {
   const hitchFrames = toNumber(input.hitchFrames);
   const contactPoint = input.contactPoint || 'ideal';
   const landingStability = input.landingStability || 'steady';
+
+  const hasStandingReach = hasRawValue(input.standingReachInches);
+  const hasContactReach = hasRawValue(input.contactReachInches);
+  const hasBallTravel = hasRawValue(input.ballTravelFeet);
+  const hasReleaseFrames = hasRawValue(input.releaseFrames);
+  const hasFps = hasRawValue(input.fps);
+  const hasHitchFrames = hasRawValue(input.hitchFrames);
 
   const verticalLeapInches = Math.max(0, contactReachInches - standingReachInches);
   const timeSeconds = fps > 0 ? releaseFrames / fps : 0;
@@ -121,6 +163,120 @@ export function runVideoAnalysis(input) {
           {left: '86%', top: '19%'},
         ];
 
+  const assessments = [
+    hasStandingReach
+      ? createAssessment(
+          'Standing Reach',
+          `${toFixedNumber(standingReachInches, 1)} in`,
+          standingReachInches >= 92 ? 'Strong base' : standingReachInches >= 84 ? 'In range' : 'Needs review',
+          standingReachInches >= 92
+            ? 'Reach baseline gives the athlete a strong platform before takeoff.'
+            : standingReachInches >= 84
+              ? 'Standing reach sits in a usable range for comparing jump progress.'
+              : 'Baseline reach looks low. Recheck the measurement to keep the jump estimate accurate.',
+          standingReachInches >= 92 ? 'good' : standingReachInches >= 84 ? 'neutral' : 'warn',
+        )
+      : createAssessment('Standing Reach', 'Missing', 'Missing data', 'Enter a standing reach so the jump math has a real baseline.', 'warn'),
+    hasContactReach
+      ? createAssessment(
+          'Contact Reach',
+          `${toFixedNumber(contactReachInches, 1)} in`,
+          contactReachInches >= 124 ? 'High contact' : contactReachInches >= 116 ? 'Competitive' : 'Developing',
+          contactReachInches >= 124
+            ? 'Contact height is attacking above the net with strong clearance.'
+            : contactReachInches >= 116
+              ? 'Contact height is workable and can keep climbing with timing and jump work.'
+              : 'Contact point is on the lower side. More jump height and earlier reach can help.',
+          contactReachInches >= 124 ? 'good' : contactReachInches >= 116 ? 'neutral' : 'warn',
+        )
+      : createAssessment('Contact Reach', 'Missing', 'Missing data', 'Enter the max contact reach from the rep to score the jump window.', 'warn'),
+    hasStandingReach && hasContactReach
+      ? createAssessment(
+          'Vertical Leap',
+          `${toFixedNumber(verticalLeapInches, 1)} in`,
+          verticalLeapInches >= 30 ? 'Explosive' : verticalLeapInches >= 24 ? 'Solid' : 'Growth area',
+          verticalLeapInches >= 30
+            ? 'This rep shows strong pop through the approach and takeoff.'
+            : verticalLeapInches >= 24
+              ? 'Jump output is solid and gives the player a playable attacking window.'
+              : 'Vertical is modest for an attacking rep. Focus on approach rhythm and full hip load.',
+          verticalLeapInches >= 30 ? 'good' : verticalLeapInches >= 24 ? 'neutral' : 'warn',
+        )
+      : createAssessment('Vertical Leap', 'Pending', 'Needs inputs', 'Standing reach and contact reach are both needed to calculate the jump.', 'warn'),
+    hasBallTravel
+      ? createAssessment(
+          'Ball Travel',
+          `${toFixedNumber(ballTravelFeet, 1)} ft`,
+          ballTravelFeet >= 35 ? 'Long flight' : ballTravelFeet >= 25 ? 'Usable sample' : 'Short sample',
+          ballTravelFeet >= 35
+            ? 'Flight distance gives a strong sample for estimating speed.'
+            : ballTravelFeet >= 25
+              ? 'Distance is enough for a reasonable speed estimate on this rep.'
+              : 'Ball path is short. A longer visible flight makes the speed estimate more trustworthy.',
+          ballTravelFeet >= 25 ? 'neutral' : 'warn',
+        )
+      : createAssessment('Ball Travel', 'Missing', 'Missing data', 'Enter the visible flight distance so the speed estimate has context.', 'warn'),
+    hasReleaseFrames && hasFps && timeSeconds > 0
+      ? createAssessment(
+          'Release Timing',
+          `${toFixedNumber(timeSeconds, 3)} s`,
+          timeSeconds <= 0.08 ? 'Fast release' : timeSeconds <= 0.13 ? 'On pace' : 'Slow release',
+          timeSeconds <= 0.08
+            ? `The ball exits quickly after contact at ${formatFrames(releaseFrames)} sampled around impact.`
+            : timeSeconds <= 0.13
+              ? `Release timing is playable at ${formatFrames(releaseFrames)}.`
+              : 'The release window is dragging. Trim wasted motion around contact for a cleaner strike.',
+          timeSeconds <= 0.13 ? 'good' : 'warn',
+        )
+      : createAssessment('Release Timing', 'Pending', 'Needs inputs', 'Release frames and FPS are both required to calculate timing.', 'warn'),
+    hasBallTravel && hasReleaseFrames && hasFps && ballSpeedMph > 0
+      ? createAssessment(
+          'Ball Speed',
+          `${toFixedNumber(ballSpeedMph, 1)} MPH`,
+          ballSpeedMph >= 50 ? 'Heavy swing' : ballSpeedMph >= 35 ? 'Playable pace' : 'Needs more force',
+          ballSpeedMph >= 50
+            ? 'The ball is jumping off the hand with strong pace.'
+            : ballSpeedMph >= 35
+              ? 'Ball speed is workable and can improve with cleaner sequencing.'
+              : 'Speed looks light. More transfer through the torso and hand finish should help.',
+          ballSpeedMph >= 50 ? 'good' : ballSpeedMph >= 35 ? 'neutral' : 'warn',
+        )
+      : createAssessment('Ball Speed', 'Pending', 'Needs inputs', 'Ball travel, release frames, and FPS are needed for the MPH estimate.', 'warn'),
+    hasHitchFrames
+      ? createAssessment(
+          'Hitch Frames',
+          formatFrames(hitchFrames),
+          hitchFrames >= 5 ? 'Major hitch' : hitchFrames >= 3 ? 'Minor hitch' : 'Clean path',
+          hitchFrames >= 5
+            ? 'The arm path has a clear pause that likely costs speed and repeatability.'
+            : hitchFrames >= 3
+              ? 'There is some interruption in the swing path, but it looks correctable.'
+              : 'The swing path reads clean with minimal interruption.',
+          hitchFrames >= 5 ? 'alert' : hitchFrames >= 3 ? 'warn' : 'good',
+        )
+      : createAssessment('Hitch Frames', 'Missing', 'Missing data', 'Enter the visible pause frames to score the hand path cleanly.', 'warn'),
+    createAssessment(
+      'Contact Point',
+      formatContactPoint(contactPoint),
+      contactPoint === 'ideal' ? 'On time' : 'Timing drift',
+      contactPoint === 'behind'
+        ? 'Contact is late. Reach sooner and rotate a touch earlier.'
+        : contactPoint === 'in-front'
+          ? 'Contact is drifting too far forward. Hold posture and let the ball arrive.'
+          : 'Contact timing looks centered for this rep.',
+      contactPoint === 'ideal' ? 'good' : 'warn',
+    ),
+    createAssessment(
+      'Landing Stability',
+      formatLandingStability(landingStability),
+      landingStability === 'steady' ? 'Controlled' : 'Leaking energy',
+      landingStability === 'steady'
+        ? 'Landing looks organized, which supports safer repeat reps.'
+        : 'Balance is leaking after the hit. Brace through takeoff and finish over the plant.',
+      landingStability === 'steady' ? 'good' : 'warn',
+    ),
+  ];
+
   return {
     verticalLeapInches: toFixedNumber(verticalLeapInches, 1),
     ballSpeedMph: toFixedNumber(ballSpeedMph, 1),
@@ -130,6 +286,7 @@ export function runVideoAnalysis(input) {
     landingStability,
     summary: `Vertical ${toFixedNumber(verticalLeapInches, 1)} in | Ball ${toFixedNumber(ballSpeedMph, 1)} MPH | Hitch ${toFixedNumber(hitchFrames, 0)} frames`,
     advice,
+    assessments,
     overlayProfile: {
       handTrail,
       ballTrail,

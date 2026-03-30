@@ -1,8 +1,31 @@
-import {ScrollView, StyleSheet, Text, View} from 'react-native';
+﻿import {ScrollView, StyleSheet, Text, View} from 'react-native';
 
 import {NeonButton} from '../components/NeonButton';
 import {PageHeader} from '../components/PageHeader';
 import {colors, neonShadow, radii, spacing} from '../theme/theme';
+
+const toneStyles = {
+  good: {
+    badgeBorderColor: 'rgba(89, 255, 168, 0.38)',
+    badgeBackgroundColor: 'rgba(89, 255, 168, 0.14)',
+    badgeTextColor: colors.success,
+  },
+  neutral: {
+    badgeBorderColor: 'rgba(126, 249, 255, 0.28)',
+    badgeBackgroundColor: 'rgba(126, 249, 255, 0.12)',
+    badgeTextColor: colors.accent,
+  },
+  warn: {
+    badgeBorderColor: 'rgba(255, 182, 88, 0.35)',
+    badgeBackgroundColor: 'rgba(255, 182, 88, 0.14)',
+    badgeTextColor: '#FFC766',
+  },
+  alert: {
+    badgeBorderColor: 'rgba(255, 95, 95, 0.36)',
+    badgeBackgroundColor: 'rgba(255, 95, 95, 0.14)',
+    badgeTextColor: '#FF9C9C',
+  },
+};
 
 function MetricTile({label, value, detail}) {
   return (
@@ -14,20 +37,42 @@ function MetricTile({label, value, detail}) {
   );
 }
 
+function AssessmentCard({item}) {
+  const tone = toneStyles[item.tone] || toneStyles.neutral;
+
+  return (
+    <View style={styles.assessmentCard}>
+      <View style={styles.assessmentTopRow}>
+        <View style={styles.assessmentTitleWrap}>
+          <Text style={styles.assessmentLabel}>{item.label}</Text>
+          <Text style={styles.assessmentValue}>{item.value}</Text>
+        </View>
+        <View
+          style={[
+            styles.assessmentBadge,
+            {
+              borderColor: tone.badgeBorderColor,
+              backgroundColor: tone.badgeBackgroundColor,
+            },
+          ]}>
+          <Text style={[styles.assessmentBadgeLabel, {color: tone.badgeTextColor}]}>{item.status}</Text>
+        </View>
+      </View>
+      <Text style={styles.assessmentNote}>{item.note}</Text>
+    </View>
+  );
+}
+
 export function MetricsScreen({analysisInput, analysisResult, onGoHome, onOpenScreen, selectedVideo}) {
   return (
     <ScrollView style={styles.safeArea} contentContainerStyle={styles.content}>
-      <PageHeader
-        onHomePress={onGoHome}
-        subtitle="Review the current metric calculations from the active clip and session settings."
-        title="Jump + Speed"
-      />
+      <PageHeader onHomePress={onGoHome} />
 
       <View style={styles.card}>
-        <Text style={styles.cardEyebrow}>Current Session</Text>
-        <Text style={styles.cardTitle}>Metric Breakdown</Text>
+        <Text style={styles.cardEyebrow}>Metrics</Text>
+        <Text style={styles.cardTitle}>Jump + Speed</Text>
         <Text style={styles.cardCopy}>
-          These numbers are calculated from the current clip markers, making them easy to refine as you review the rep.
+          This page gives every current stat back to the user as a readable assessment, not just raw math.
         </Text>
       </View>
 
@@ -56,13 +101,29 @@ export function MetricsScreen({analysisInput, analysisResult, onGoHome, onOpenSc
             />
           </View>
 
+          <View style={styles.sectionCard}>
+            <Text style={styles.sectionTitle}>Session Assessment</Text>
+            <Text style={styles.sectionCopy}>
+              Every marker entered from the rep is assessed below so the player can see what is strong, what needs cleanup, and why.
+            </Text>
+          </View>
+
+          <View style={styles.assessmentList}>
+            {(analysisResult.assessments || []).map(item => (
+              <AssessmentCard item={item} key={item.id} />
+            ))}
+          </View>
+
           <View style={styles.formulaCard}>
-            <Text style={styles.formulaTitle}>Current Inputs</Text>
-            <Text style={styles.formulaCopy}>Standing reach: {analysisInput.standingReachInches} in</Text>
-            <Text style={styles.formulaCopy}>Contact reach: {analysisInput.contactReachInches} in</Text>
-            <Text style={styles.formulaCopy}>Ball travel: {analysisInput.ballTravelFeet} ft</Text>
-            <Text style={styles.formulaCopy}>Release frames: {analysisInput.releaseFrames}</Text>
-            <Text style={styles.formulaCopy}>FPS: {analysisInput.fps}</Text>
+            <Text style={styles.formulaTitle}>Current Session Inputs</Text>
+            <Text style={styles.formulaCopy}>Standing reach: {analysisInput.standingReachInches || '--'} in</Text>
+            <Text style={styles.formulaCopy}>Contact reach: {analysisInput.contactReachInches || '--'} in</Text>
+            <Text style={styles.formulaCopy}>Ball travel: {analysisInput.ballTravelFeet || '--'} ft</Text>
+            <Text style={styles.formulaCopy}>Release frames: {analysisInput.releaseFrames || '--'}</Text>
+            <Text style={styles.formulaCopy}>FPS: {analysisInput.fps || '--'}</Text>
+            <Text style={styles.formulaCopy}>Hitch frames: {analysisInput.hitchFrames || '--'}</Text>
+            <Text style={styles.formulaCopy}>Contact point: {analysisInput.contactPoint}</Text>
+            <Text style={styles.formulaCopy}>Landing stability: {analysisInput.landingStability}</Text>
             <Text style={styles.formulaCopy}>Current clip: {selectedVideo?.fileName || 'None selected'}</Text>
           </View>
         </>
@@ -151,6 +212,76 @@ const styles = StyleSheet.create({
     color: colors.textDim,
     fontSize: 13,
     lineHeight: 20,
+  },
+  sectionCard: {
+    borderRadius: radii.md,
+    borderWidth: 1,
+    borderColor: 'rgba(126, 249, 255, 0.18)',
+    backgroundColor: 'rgba(17, 11, 28, 0.88)',
+    padding: spacing.md,
+    marginBottom: spacing.md,
+  },
+  sectionTitle: {
+    color: colors.text,
+    fontFamily: 'Bangers',
+    fontSize: 28,
+    letterSpacing: 0.7,
+    marginBottom: spacing.xs,
+  },
+  sectionCopy: {
+    color: colors.textMuted,
+    fontSize: 14,
+    lineHeight: 21,
+  },
+  assessmentList: {
+    gap: spacing.md,
+    marginBottom: spacing.lg,
+  },
+  assessmentCard: {
+    borderRadius: radii.md,
+    borderWidth: 1,
+    borderColor: colors.stroke,
+    backgroundColor: 'rgba(17, 11, 28, 0.92)',
+    padding: spacing.md,
+  },
+  assessmentTopRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: spacing.sm,
+    gap: spacing.sm,
+  },
+  assessmentTitleWrap: {
+    flex: 1,
+  },
+  assessmentLabel: {
+    color: colors.text,
+    fontSize: 14,
+    fontWeight: '700',
+    marginBottom: 4,
+  },
+  assessmentValue: {
+    color: colors.primarySoft,
+    fontFamily: 'Bangers',
+    fontSize: 28,
+    letterSpacing: 0.7,
+  },
+  assessmentBadge: {
+    borderRadius: radii.round,
+    borderWidth: 1,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 8,
+  },
+  assessmentBadgeLabel: {
+    fontSize: 11,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    letterSpacing: 1.1,
+  },
+  assessmentNote: {
+    color: colors.textMuted,
+    fontSize: 14,
+    lineHeight: 21,
   },
   formulaCard: {
     borderRadius: radii.md,

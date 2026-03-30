@@ -1,4 +1,4 @@
-import {Alert, ScrollView, StyleSheet, Text, TextInput, View} from 'react-native';
+﻿import {Alert, Pressable, ScrollView, StyleSheet, Text, TextInput, View} from 'react-native';
 import {launchCamera, launchImageLibrary} from 'react-native-image-picker';
 import Video from 'react-native-video';
 
@@ -8,9 +8,9 @@ import {colors, neonShadow, radii, spacing} from '../theme/theme';
 
 function ChoicePill({label, active, onPress}) {
   return (
-    <Text onPress={onPress} style={[styles.choicePill, active && styles.choicePillActive]}>
-      {label}
-    </Text>
+    <Pressable onPress={onPress} style={[styles.choicePill, active && styles.choicePillActive]}>
+      <Text style={[styles.choicePillLabel, active && styles.choicePillLabelActive]}>{label}</Text>
+    </Pressable>
   );
 }
 
@@ -26,6 +26,18 @@ function InputCard({label, value, onChangeText}) {
         style={styles.input}
         value={value}
       />
+    </View>
+  );
+}
+
+function AssessmentPreview({item}) {
+  return (
+    <View style={styles.assessmentRow}>
+      <View>
+        <Text style={styles.assessmentLabel}>{item.label}</Text>
+        <Text style={styles.assessmentStatus}>{item.status}</Text>
+      </View>
+      <Text style={styles.assessmentValue}>{item.value}</Text>
     </View>
   );
 }
@@ -82,19 +94,17 @@ export function MotionLabScreen({
     }
   };
 
+  const previewAssessments = analysisResult?.assessments?.slice(0, 3) || [];
+
   return (
     <ScrollView style={styles.safeArea} contentContainerStyle={styles.content}>
-      <PageHeader
-        onHomePress={onGoHome}
-        subtitle="Record or import a clip, then run a working first-pass analysis session."
-        title="Motion Lab"
-      />
+      <PageHeader onHomePress={onGoHome} />
 
       <View style={styles.card}>
-        <Text style={styles.cardEyebrow}>Workflow</Text>
-        <Text style={styles.cardTitle}>Video In, Session Analysis Out</Text>
+        <Text style={styles.cardEyebrow}>Recorder</Text>
+        <Text style={styles.cardTitle}>Motion Lab</Text>
         <Text style={styles.cardCopy}>
-          This page is the working bridge between recording a rep and generating numbers plus advice. Load a clip, tune the session markers, then run analysis.
+          Record or import a rep, set the motion markers, and let the app score the current clip.
         </Text>
       </View>
 
@@ -116,9 +126,7 @@ export function MotionLabScreen({
                 style={styles.video}
               />
             </View>
-            <Text style={styles.videoMeta}>
-              {selectedVideo.fileName || 'Selected clip'}
-            </Text>
+            <Text style={styles.videoMeta}>{selectedVideo.fileName || 'Selected clip'}</Text>
             <Text style={styles.videoMeta}>
               Duration: {selectedVideo.duration ? `${selectedVideo.duration}s` : 'Unknown'}
             </Text>
@@ -206,15 +214,22 @@ export function MotionLabScreen({
         <NeonButton label="Run Analysis" onPress={onRunAnalysis} />
         <NeonButton label="Open Playback" onPress={() => onOpenScreen('neon-playback')} tone="secondary" />
         <NeonButton label="Open Feedback" onPress={() => onOpenScreen('swing-feedback')} tone="secondary" />
+        <NeonButton label="Open Metrics" onPress={() => onOpenScreen('jump-speed')} tone="secondary" />
       </View>
 
       {analysisResult ? (
         <View style={styles.resultCard}>
-          <Text style={styles.cardEyebrow}>Last Result</Text>
+          <Text style={styles.cardEyebrow}>Current Result</Text>
           <Text style={styles.resultSummary}>{analysisResult.summary}</Text>
           <Text style={styles.resultCopy}>
-            The current video session is analyzed and ready to review in playback, metrics, and feedback.
+            The computer is assessing the current session and can return the full breakdown in Jump + Speed.
           </Text>
+
+          <View style={styles.assessmentWrap}>
+            {previewAssessments.map(item => (
+              <AssessmentPreview item={item} key={item.id} />
+            ))}
+          </View>
         </View>
       ) : null}
     </ScrollView>
@@ -338,19 +353,24 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   },
   choicePill: {
-    color: colors.textMuted,
     borderRadius: radii.round,
     borderWidth: 1,
     borderColor: 'rgba(255, 110, 209, 0.2)',
     backgroundColor: 'rgba(9, 2, 15, 0.92)',
     paddingHorizontal: spacing.md,
     paddingVertical: 10,
-    overflow: 'hidden',
   },
   choicePillActive: {
-    color: colors.text,
     borderColor: 'rgba(255, 110, 209, 0.45)',
     backgroundColor: 'rgba(255, 63, 164, 0.16)',
+  },
+  choicePillLabel: {
+    color: colors.textMuted,
+    fontSize: 14,
+  },
+  choicePillLabelActive: {
+    color: colors.text,
+    fontWeight: '700',
   },
   resultCard: {
     borderRadius: radii.lg,
@@ -370,5 +390,37 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
     fontSize: 14,
     lineHeight: 21,
+    marginBottom: spacing.md,
+  },
+  assessmentWrap: {
+    gap: spacing.sm,
+  },
+  assessmentRow: {
+    borderRadius: radii.md,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 110, 209, 0.18)',
+    backgroundColor: 'rgba(12, 5, 20, 0.8)',
+    padding: spacing.md,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  assessmentLabel: {
+    color: colors.text,
+    fontSize: 14,
+    fontWeight: '700',
+    marginBottom: 4,
+  },
+  assessmentStatus: {
+    color: colors.textDim,
+    fontSize: 12,
+    textTransform: 'uppercase',
+    letterSpacing: 1.1,
+  },
+  assessmentValue: {
+    color: colors.primarySoft,
+    fontFamily: 'Bangers',
+    fontSize: 24,
+    letterSpacing: 0.6,
   },
 });
