@@ -4,7 +4,7 @@ import {Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View} from
 import {NeonButton} from '../components/NeonButton';
 import {PageHeader} from '../components/PageHeader';
 import {scoreboardStatCategories} from '../data/dashboard';
-import {colors, neonShadow, radii, spacing} from '../theme/theme';
+import {colors, radii, spacing} from '../theme/theme';
 
 function sumRosterStat(roster = [], statId) {
   return roster.reduce((total, player) => total + Number(player.stats?.[statId] || 0), 0);
@@ -44,11 +44,11 @@ function PlayerStatTile({isVeryCompact, player, statCategory, teamSide, onAdjust
   return (
     <View style={[styles.playerTile, isVeryCompact && styles.playerTileCompact]}>
       <View style={styles.playerTileTop}>
-        <Text style={[styles.playerJersey, styles.bangersInset]}>#{player.jersey}</Text>
+        <Text style={styles.playerJersey}>#{player.jersey}</Text>
         <Text numberOfLines={1} style={styles.playerName}>{player.name}</Text>
         <Text style={styles.playerRole}>{player.role}</Text>
       </View>
-      <Text style={[styles.playerStatValue, styles.bangersInset]}>{value}</Text>
+      <Text style={styles.playerStatValue}>{value}</Text>
       <View style={styles.playerActionRow}>
         <MiniActionButton
           label="-1"
@@ -69,10 +69,10 @@ function QuickTeamPanel({isCompact, isVeryCompact, players, statCategory, teamLa
       <View style={[styles.quickTeamHeader, isCompact && styles.quickTeamHeaderCompact]}>
         <View style={styles.quickTeamTitleWrap}>
           <Text style={styles.quickTeamEyebrow}>{teamSide === 'home' ? 'Home' : 'Away'}</Text>
-          <Text numberOfLines={2} style={[styles.quickTeamTitle, styles.bangersInset]}>{teamLabel}</Text>
+          <Text numberOfLines={2} style={styles.quickTeamTitle}>{teamLabel}</Text>
         </View>
         <View style={[styles.quickTeamTotalPill, isCompact && styles.quickTeamTotalPillCompact]}>
-          <Text style={[styles.quickTeamTotalValue, styles.bangersInset]}>{total}</Text>
+          <Text style={styles.quickTeamTotalValue}>{total}</Text>
           <Text style={styles.quickTeamTotalLabel}>{statCategory.label}</Text>
         </View>
       </View>
@@ -104,14 +104,14 @@ function ReviewTeamCard({roster, teamName}) {
       <View style={styles.reviewHeader}>
         <View>
           <Text style={styles.reviewEyebrow}>Team Review</Text>
-          <Text style={[styles.reviewTitle, styles.bangersInset]}>{teamName}</Text>
+          <Text style={styles.reviewTitle}>{teamName}</Text>
         </View>
       </View>
 
       <View style={styles.reviewTotalsRow}>
         {totals.map(category => (
           <View key={category.id} style={styles.reviewTotalPill}>
-            <Text style={[styles.reviewTotalValue, styles.bangersInset]}>{category.value}</Text>
+            <Text style={styles.reviewTotalValue}>{category.value}</Text>
             <Text style={styles.reviewTotalLabel}>{category.label}</Text>
           </View>
         ))}
@@ -129,7 +129,7 @@ function ReviewTeamCard({roster, teamName}) {
 
           {roster.map(player => (
             <View key={player.id} style={styles.reviewRow}>
-              <Text style={[styles.reviewCell, styles.reviewCellJersey, styles.bangersInset]}>#{player.jersey}</Text>
+              <Text style={[styles.reviewCell, styles.reviewCellJersey]}>#{player.jersey}</Text>
               <Text numberOfLines={1} style={[styles.reviewCell, styles.reviewCellName]}>{player.name}</Text>
               {scoreboardStatCategories.map(category => (
                 <Text key={`${player.id}-${category.id}`} style={[styles.reviewCell, styles.reviewCellStat]}>
@@ -202,7 +202,7 @@ export function CoachBoardScreen({
 
         <View style={[styles.scoreMainRow, isCompact && styles.scoreMainRowCompact]}>
           <View style={[styles.teamScorePanel, isCompact && styles.teamScorePanelCompact]}>
-            <Text numberOfLines={2} style={[styles.teamName, styles.bangersInset, isCompact && styles.teamNameCompact]}>{homeDisplayLabel}</Text>
+            <Text numberOfLines={2} style={[styles.teamName, isCompact && styles.teamNameCompact]}>{homeDisplayLabel}</Text>
             <View style={[styles.serveBadge, coachBoard.possession === 'home' && styles.serveBadgeActive]}>
               <Text style={[styles.serveBadgeText, coachBoard.possession === 'home' && styles.serveBadgeTextActive]}>
                 {coachBoard.possession === 'home' ? 'Serving' : 'Receive'}
@@ -214,7 +214,6 @@ export function CoachBoardScreen({
                 numberOfLines={1}
                 style={[
                   styles.scoreValue,
-                  styles.bangersInset,
                   isCompact && styles.scoreValueCompact,
                   isVeryCompact && styles.scoreValueVeryCompact,
                 ]}>
@@ -243,12 +242,12 @@ export function CoachBoardScreen({
 
           <View style={[styles.scoreCenterRail, isCompact && styles.scoreCenterRailCompact]}>
             <Text style={styles.centerEyebrow}>Match</Text>
-            <Text style={[styles.centerValue, styles.bangersInset, isCompact && styles.centerValueCompact]}>VS</Text>
+            <Text style={[styles.centerValue, isCompact && styles.centerValueCompact]}>VS</Text>
             <Text style={[styles.centerMeta, isCompact && styles.centerMetaCompact]}>Serve with {servingTeamName}</Text>
           </View>
 
           <View style={[styles.teamScorePanel, isCompact && styles.teamScorePanelCompact]}>
-            <Text numberOfLines={2} style={[styles.teamName, styles.bangersInset, isCompact && styles.teamNameCompact]}>{awayDisplayLabel}</Text>
+            <Text numberOfLines={2} style={[styles.teamName, isCompact && styles.teamNameCompact]}>{awayDisplayLabel}</Text>
             <View style={[styles.serveBadge, coachBoard.possession === 'away' && styles.serveBadgeActive]}>
               <Text style={[styles.serveBadgeText, coachBoard.possession === 'away' && styles.serveBadgeTextActive]}>
                 {coachBoard.possession === 'away' ? 'Serving' : 'Receive'}
@@ -260,7 +259,6 @@ export function CoachBoardScreen({
                 numberOfLines={1}
                 style={[
                   styles.scoreValue,
-                  styles.bangersInset,
                   isCompact && styles.scoreValueCompact,
                   isVeryCompact && styles.scoreValueVeryCompact,
                 ]}>
@@ -328,7 +326,7 @@ export function CoachBoardScreen({
         <>
           <View style={styles.reviewIntro}>
             <Text style={styles.reviewIntroEyebrow}>Finished Match</Text>
-            <Text style={[styles.reviewIntroTitle, styles.bangersInset]}>Individual team statistics</Text>
+            <Text style={styles.reviewIntroTitle}>Individual team statistics</Text>
             <Text style={styles.reviewIntroCopy}>Every player line stays visible here after the match is closed so you can review both teams cleanly.</Text>
           </View>
           <ReviewTeamCard roster={coachBoard.homeRoster} teamName={homeDisplayLabel} />
@@ -339,7 +337,7 @@ export function CoachBoardScreen({
           <View style={styles.panelHeader}>
             <View>
               <Text style={styles.panelEyebrow}>Swipeable Stat Panel</Text>
-              <Text style={[styles.panelTitle, styles.bangersInset, isCompact && styles.panelTitleCompact]}>{activeStatCategory.label}</Text>
+              <Text style={[styles.panelTitle, isCompact && styles.panelTitleCompact]}>{activeStatCategory.label}</Text>
             </View>
             <Text style={styles.panelHint}>{activeStatCategory.hint}</Text>
           </View>
@@ -410,18 +408,21 @@ const styles = StyleSheet.create({
   contentCompact: {
     paddingHorizontal: spacing.md,
   },
-  bangersInset: {
-    paddingLeft: 6,
-    paddingRight: 16,
-  },
   scoreCard: {
-    borderRadius: 32,
-    borderWidth: 1,
-    borderColor: colors.stroke,
-    backgroundColor: colors.surfaceStrong,
+    borderRadius: 22,
+    borderWidth: 2,
+    borderColor: 'rgba(255, 110, 209, 0.5)',
+    backgroundColor: 'rgba(18, 6, 25, 0.98)',
     padding: spacing.lg,
     marginBottom: spacing.lg,
-    ...neonShadow,
+    shadowColor: colors.primaryBright,
+    shadowOpacity: 0.3,
+    shadowRadius: 18,
+    shadowOffset: {
+      width: 0,
+      height: 0,
+    },
+    elevation: 16,
   },
   scoreCardCompact: {
     padding: spacing.md,
@@ -478,38 +479,61 @@ const styles = StyleSheet.create({
   },
   teamScorePanel: {
     flex: 1,
-    borderRadius: 26,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 110, 209, 0.24)',
-    backgroundColor: 'rgba(255, 63, 164, 0.08)',
+    borderRadius: 18,
+    borderWidth: 2,
+    borderColor: 'rgba(255, 110, 209, 0.44)',
+    backgroundColor: 'rgba(14, 6, 20, 0.96)',
     padding: spacing.md,
     alignItems: 'center',
+    shadowColor: colors.primaryBright,
+    shadowOpacity: 0.18,
+    shadowRadius: 12,
+    shadowOffset: {
+      width: 0,
+      height: 0,
+    },
+    elevation: 10,
   },
   teamScorePanelCompact: {
     width: '100%',
   },
   teamName: {
-    color: colors.text,
-    fontFamily: 'Bangers',
-    fontSize: 28,
-    letterSpacing: 0.8,
+    color: colors.primarySoft,
+    fontSize: 24,
+    fontWeight: '900',
+    letterSpacing: 2.4,
     textAlign: 'center',
+    textTransform: 'uppercase',
+    textShadowColor: 'rgba(255, 110, 209, 0.9)',
+    textShadowOffset: {
+      width: 0,
+      height: 0,
+    },
+    textShadowRadius: 10,
   },
   teamNameCompact: {
-    fontSize: 24,
+    fontSize: 21,
   },
   serveBadge: {
     marginTop: spacing.sm,
-    borderRadius: radii.round,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 110, 209, 0.2)',
-    backgroundColor: 'rgba(16, 10, 26, 0.9)',
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: 'rgba(255, 110, 209, 0.24)',
+    backgroundColor: 'rgba(10, 5, 16, 0.96)',
     paddingHorizontal: spacing.md,
     paddingVertical: 6,
   },
   serveBadgeActive: {
-    backgroundColor: 'rgba(255, 63, 164, 0.18)',
-    borderColor: 'rgba(255, 110, 209, 0.4)',
+    backgroundColor: 'rgba(255, 63, 164, 0.22)',
+    borderColor: 'rgba(255, 110, 209, 0.56)',
+    shadowColor: colors.primaryBright,
+    shadowOpacity: 0.18,
+    shadowRadius: 8,
+    shadowOffset: {
+      width: 0,
+      height: 0,
+    },
+    elevation: 6,
   },
   serveBadgeText: {
     color: colors.textDim,
@@ -525,8 +549,21 @@ const styles = StyleSheet.create({
     minWidth: 154,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: spacing.sm,
+    borderRadius: 18,
+    borderWidth: 2,
+    borderColor: 'rgba(255, 110, 209, 0.48)',
+    backgroundColor: 'rgba(255, 63, 164, 0.1)',
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs,
     marginVertical: spacing.sm,
+    shadowColor: colors.primaryBright,
+    shadowOpacity: 0.24,
+    shadowRadius: 14,
+    shadowOffset: {
+      width: 0,
+      height: 0,
+    },
+    elevation: 10,
   },
   scoreValueFrameCompact: {
     minWidth: 124,
@@ -535,19 +572,27 @@ const styles = StyleSheet.create({
   },
   scoreValue: {
     color: colors.text,
-    fontFamily: 'Bangers',
-    fontSize: 102,
-    lineHeight: 110,
-    letterSpacing: 1,
+    fontSize: 96,
+    lineHeight: 100,
+    fontWeight: '900',
+    fontVariant: ['tabular-nums'],
+    includeFontPadding: false,
+    letterSpacing: 2.5,
     textAlign: 'center',
+    textShadowColor: 'rgba(255, 110, 209, 0.95)',
+    textShadowOffset: {
+      width: 0,
+      height: 0,
+    },
+    textShadowRadius: 18,
   },
   scoreValueCompact: {
-    fontSize: 82,
-    lineHeight: 90,
+    fontSize: 78,
+    lineHeight: 82,
   },
   scoreValueVeryCompact: {
-    fontSize: 70,
-    lineHeight: 78,
+    fontSize: 64,
+    lineHeight: 68,
   },
   pointControlRow: {
     width: '100%',
@@ -608,11 +653,17 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
   },
   centerValue: {
-    color: colors.accent,
-    fontFamily: 'Bangers',
-    fontSize: 38,
-    letterSpacing: 1,
+    color: colors.primaryBright,
+    fontSize: 34,
+    fontWeight: '900',
+    letterSpacing: 3,
     marginVertical: spacing.xs,
+    textShadowColor: 'rgba(255, 110, 209, 0.9)',
+    textShadowOffset: {
+      width: 0,
+      height: 0,
+    },
+    textShadowRadius: 12,
   },
   centerValueCompact: {
     fontSize: 30,
@@ -653,8 +704,8 @@ const styles = StyleSheet.create({
   miniButton: {
     flex: 1,
     minHeight: 40,
-    borderRadius: radii.round,
-    borderWidth: 1,
+    borderRadius: 12,
+    borderWidth: 2,
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: spacing.sm,
@@ -684,12 +735,19 @@ const styles = StyleSheet.create({
     color: colors.accent,
   },
   panelCard: {
-    borderRadius: 30,
-    borderWidth: 1,
-    borderColor: colors.stroke,
-    backgroundColor: colors.surface,
+    borderRadius: 22,
+    borderWidth: 2,
+    borderColor: 'rgba(255, 110, 209, 0.42)',
+    backgroundColor: 'rgba(16, 6, 23, 0.96)',
     padding: spacing.lg,
-    ...neonShadow,
+    shadowColor: colors.primaryBright,
+    shadowOpacity: 0.24,
+    shadowRadius: 16,
+    shadowOffset: {
+      width: 0,
+      height: 0,
+    },
+    elevation: 12,
   },
   panelCardCompact: {
     padding: spacing.md,
@@ -708,12 +766,19 @@ const styles = StyleSheet.create({
   },
   panelTitle: {
     color: colors.text,
-    fontFamily: 'Bangers',
-    fontSize: 34,
-    letterSpacing: 0.8,
+    fontSize: 30,
+    fontWeight: '900',
+    letterSpacing: 1.8,
+    textTransform: 'uppercase',
+    textShadowColor: 'rgba(255, 110, 209, 0.88)',
+    textShadowOffset: {
+      width: 0,
+      height: 0,
+    },
+    textShadowRadius: 10,
   },
   panelTitleCompact: {
-    fontSize: 28,
+    fontSize: 24,
   },
   panelHint: {
     color: colors.textMuted,
@@ -728,11 +793,19 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.xs,
   },
   quickTeamPanel: {
-    borderRadius: 24,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 110, 209, 0.18)',
-    backgroundColor: 'rgba(13, 10, 20, 0.86)',
+    borderRadius: 18,
+    borderWidth: 2,
+    borderColor: 'rgba(255, 110, 209, 0.34)',
+    backgroundColor: 'rgba(10, 4, 15, 0.94)',
     padding: spacing.md,
+    shadowColor: colors.primaryBright,
+    shadowOpacity: 0.14,
+    shadowRadius: 10,
+    shadowOffset: {
+      width: 0,
+      height: 0,
+    },
+    elevation: 8,
   },
   quickTeamPanelCompact: {
     padding: spacing.sm,
@@ -761,16 +834,23 @@ const styles = StyleSheet.create({
   },
   quickTeamTitle: {
     color: colors.text,
-    fontFamily: 'Bangers',
-    fontSize: 26,
-    letterSpacing: 0.8,
+    fontSize: 22,
+    fontWeight: '900',
+    letterSpacing: 1.6,
+    textTransform: 'uppercase',
+    textShadowColor: 'rgba(255, 110, 209, 0.72)',
+    textShadowOffset: {
+      width: 0,
+      height: 0,
+    },
+    textShadowRadius: 8,
   },
   quickTeamTotalPill: {
-    minWidth: 76,
-    borderRadius: radii.md,
-    borderWidth: 1,
-    borderColor: 'rgba(126, 249, 255, 0.24)',
-    backgroundColor: 'rgba(126, 249, 255, 0.08)',
+    minWidth: 82,
+    borderRadius: 14,
+    borderWidth: 2,
+    borderColor: 'rgba(255, 110, 209, 0.4)',
+    backgroundColor: 'rgba(255, 63, 164, 0.12)',
     paddingHorizontal: spacing.sm,
     paddingVertical: spacing.sm,
     alignItems: 'center',
@@ -779,9 +859,17 @@ const styles = StyleSheet.create({
     alignSelf: 'stretch',
   },
   quickTeamTotalValue: {
-    color: colors.accent,
-    fontFamily: 'Bangers',
+    color: colors.text,
     fontSize: 24,
+    fontWeight: '900',
+    fontVariant: ['tabular-nums'],
+    letterSpacing: 1.2,
+    textShadowColor: 'rgba(255, 110, 209, 0.82)',
+    textShadowOffset: {
+      width: 0,
+      height: 0,
+    },
+    textShadowRadius: 8,
   },
   quickTeamTotalLabel: {
     color: colors.textMuted,
@@ -797,11 +885,19 @@ const styles = StyleSheet.create({
   },
   playerTile: {
     width: '48.5%',
-    borderRadius: radii.md,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 110, 209, 0.18)',
-    backgroundColor: 'rgba(255, 63, 164, 0.07)',
+    borderRadius: 16,
+    borderWidth: 2,
+    borderColor: 'rgba(255, 110, 209, 0.28)',
+    backgroundColor: 'rgba(20, 8, 28, 0.94)',
     padding: spacing.sm,
+    shadowColor: colors.primaryBright,
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    shadowOffset: {
+      width: 0,
+      height: 0,
+    },
+    elevation: 5,
   },
   playerTileCompact: {
     width: '100%',
@@ -810,10 +906,17 @@ const styles = StyleSheet.create({
     marginBottom: spacing.sm,
   },
   playerJersey: {
-    color: colors.accent,
-    fontFamily: 'Bangers',
-    fontSize: 26,
-    letterSpacing: 0.8,
+    color: colors.primaryBright,
+    fontSize: 22,
+    fontWeight: '900',
+    fontVariant: ['tabular-nums'],
+    letterSpacing: 1.4,
+    textShadowColor: 'rgba(255, 110, 209, 0.8)',
+    textShadowOffset: {
+      width: 0,
+      height: 0,
+    },
+    textShadowRadius: 8,
   },
   playerName: {
     color: colors.text,
@@ -828,10 +931,17 @@ const styles = StyleSheet.create({
   },
   playerStatValue: {
     color: colors.text,
-    fontFamily: 'Bangers',
-    fontSize: 32,
-    letterSpacing: 0.8,
+    fontSize: 30,
+    fontWeight: '900',
+    fontVariant: ['tabular-nums'],
+    letterSpacing: 1.4,
     marginBottom: spacing.sm,
+    textShadowColor: 'rgba(255, 110, 209, 0.84)',
+    textShadowOffset: {
+      width: 0,
+      height: 0,
+    },
+    textShadowRadius: 10,
   },
   playerActionRow: {
     flexDirection: 'row',
@@ -845,14 +955,18 @@ const styles = StyleSheet.create({
     marginTop: spacing.md,
   },
   pageDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 999,
-    backgroundColor: 'rgba(255, 255, 255, 0.16)',
+    width: 10,
+    height: 10,
+    borderRadius: 3,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 110, 209, 0.28)',
+    backgroundColor: 'rgba(255, 255, 255, 0.12)',
   },
   pageDotActive: {
-    width: 20,
-    backgroundColor: colors.primaryBright,
+    width: 24,
+    borderRadius: 4,
+    borderColor: 'rgba(255, 110, 209, 0.64)',
+    backgroundColor: 'rgba(255, 63, 164, 0.76)',
   },
   categoryChipRow: {
     gap: spacing.sm,
@@ -860,16 +974,24 @@ const styles = StyleSheet.create({
     paddingBottom: 2,
   },
   categoryChip: {
-    borderRadius: radii.round,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 110, 209, 0.18)',
-    backgroundColor: 'rgba(13, 10, 20, 0.86)',
+    borderRadius: 14,
+    borderWidth: 2,
+    borderColor: 'rgba(255, 110, 209, 0.24)',
+    backgroundColor: 'rgba(13, 10, 20, 0.92)',
     paddingHorizontal: spacing.md,
     paddingVertical: 10,
   },
   categoryChipActive: {
-    backgroundColor: 'rgba(255, 63, 164, 0.18)',
-    borderColor: 'rgba(255, 110, 209, 0.36)',
+    backgroundColor: 'rgba(255, 63, 164, 0.22)',
+    borderColor: 'rgba(255, 110, 209, 0.52)',
+    shadowColor: colors.primaryBright,
+    shadowOpacity: 0.18,
+    shadowRadius: 8,
+    shadowOffset: {
+      width: 0,
+      height: 0,
+    },
+    elevation: 6,
   },
   categoryChipPressed: {
     transform: [{scale: 0.98}],
@@ -897,10 +1019,17 @@ const styles = StyleSheet.create({
   },
   reviewIntroTitle: {
     color: colors.text,
-    fontFamily: 'Bangers',
-    fontSize: 34,
-    letterSpacing: 0.8,
+    fontSize: 28,
+    fontWeight: '900',
+    letterSpacing: 1.8,
+    textTransform: 'uppercase',
     marginBottom: 6,
+    textShadowColor: 'rgba(255, 110, 209, 0.82)',
+    textShadowOffset: {
+      width: 0,
+      height: 0,
+    },
+    textShadowRadius: 10,
   },
   reviewIntroCopy: {
     color: colors.textMuted,
@@ -908,13 +1037,20 @@ const styles = StyleSheet.create({
     lineHeight: 19,
   },
   reviewCard: {
-    borderRadius: 28,
-    borderWidth: 1,
-    borderColor: colors.stroke,
-    backgroundColor: colors.surface,
+    borderRadius: 20,
+    borderWidth: 2,
+    borderColor: 'rgba(255, 110, 209, 0.42)',
+    backgroundColor: 'rgba(16, 6, 23, 0.96)',
     padding: spacing.lg,
     marginBottom: spacing.md,
-    ...neonShadow,
+    shadowColor: colors.primaryBright,
+    shadowOpacity: 0.22,
+    shadowRadius: 14,
+    shadowOffset: {
+      width: 0,
+      height: 0,
+    },
+    elevation: 10,
   },
   reviewHeader: {
     marginBottom: spacing.md,
@@ -929,9 +1065,16 @@ const styles = StyleSheet.create({
   },
   reviewTitle: {
     color: colors.text,
-    fontFamily: 'Bangers',
-    fontSize: 30,
-    letterSpacing: 0.8,
+    fontSize: 24,
+    fontWeight: '900',
+    letterSpacing: 1.8,
+    textTransform: 'uppercase',
+    textShadowColor: 'rgba(255, 110, 209, 0.8)',
+    textShadowOffset: {
+      width: 0,
+      height: 0,
+    },
+    textShadowRadius: 8,
   },
   reviewTotalsRow: {
     flexDirection: 'row',
@@ -942,17 +1085,25 @@ const styles = StyleSheet.create({
   reviewTotalPill: {
     minWidth: 92,
     marginRight: spacing.sm,
-    borderRadius: radii.md,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 110, 209, 0.18)',
-    backgroundColor: 'rgba(255, 63, 164, 0.08)',
+    borderRadius: 14,
+    borderWidth: 2,
+    borderColor: 'rgba(255, 110, 209, 0.32)',
+    backgroundColor: 'rgba(255, 63, 164, 0.12)',
     paddingHorizontal: spacing.sm,
     paddingVertical: spacing.sm,
   },
   reviewTotalValue: {
     color: colors.text,
-    fontFamily: 'Bangers',
     fontSize: 22,
+    fontWeight: '900',
+    fontVariant: ['tabular-nums'],
+    letterSpacing: 1.2,
+    textShadowColor: 'rgba(255, 110, 209, 0.76)',
+    textShadowOffset: {
+      width: 0,
+      height: 0,
+    },
+    textShadowRadius: 8,
   },
   reviewTotalLabel: {
     color: colors.textMuted,
@@ -962,13 +1113,13 @@ const styles = StyleSheet.create({
   },
   reviewTable: {
     minWidth: 680,
-    borderRadius: radii.md,
+    borderRadius: 16,
     overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: 'rgba(255, 110, 209, 0.18)',
+    borderWidth: 2,
+    borderColor: 'rgba(255, 110, 209, 0.28)',
   },
   reviewHeaderRow: {
-    backgroundColor: 'rgba(255, 63, 164, 0.12)',
+    backgroundColor: 'rgba(255, 63, 164, 0.2)',
   },
   reviewRow: {
     flexDirection: 'row',
@@ -985,9 +1136,11 @@ const styles = StyleSheet.create({
   },
   reviewCellJersey: {
     width: 56,
-    color: colors.accent,
-    fontFamily: 'Bangers',
-    fontSize: 18,
+    color: colors.primaryBright,
+    fontSize: 16,
+    fontWeight: '900',
+    fontVariant: ['tabular-nums'],
+    letterSpacing: 1,
   },
   reviewCellName: {
     width: 180,
@@ -999,4 +1152,3 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
 });
-
