@@ -62,13 +62,13 @@ export const motionLabSections = [
     id: 'motion-lab',
     label: 'Recorder',
     eyebrow: 'Capture',
-    preview: 'Record or import a rep and set the core motion markers for the analysis.',
+    preview: 'Record or import one rep, run one pass, and review the current motion snapshot in one tighter screen.',
     description:
-      'Capture the athlete clip, tune the current sample fields, and launch the Motion Lab tools from the same rep.',
+      'Capture one athlete clip, run one analysis pass, and keep the video, playback read, metric links, and advice together on a single Motion Lab page.',
     bullets: [
-      'Open camera or video library',
-      'Let Motion Lab fill the jump and release read automatically',
-      'Run the current session analysis',
+      'Record or import one rep',
+      'Run one Motion Lab analysis pass',
+      'Open stat history directly from the metric tiles',
     ],
     openLabel: 'Open Recorder',
   },
@@ -102,17 +102,17 @@ export const motionLabSections = [
   },
   {
     id: 'motion-stats',
-    label: 'Motion Stats',
+    label: 'Stat History',
     eyebrow: 'Tabulated Figures',
-    preview: 'Return all current figures in one place for the rep.',
+    preview: 'Open a clean history grid for one tracked metric at a time.',
     description:
-      'Motion Stats gathers the current rep values into one tabulated page, including jump, speed, hitch severity, timing, contact point, and landing control.',
+      'Stat History opens one tracked category at a time so the coach can review the saved history for that metric in a cleaner grid.',
     bullets: [
-      'Score every entered motion marker',
-      'Return a readable assessment card for each stat',
-      'Keep the current clip and inputs tied to the output',
+      'Open one metric history grid at a time',
+      'Review saved Motion Lab sessions by category',
+      'Keep the current reading tied to the history list',
     ],
-    openLabel: 'Open Motion Stats',
+    openLabel: 'Open Stat History',
   },
   {
     id: 'swing-feedback',
@@ -210,3 +210,4 @@ export const initialProfiles = [
     sessions: [],
   },
 ];
+

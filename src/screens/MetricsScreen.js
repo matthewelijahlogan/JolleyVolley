@@ -2,147 +2,79 @@ import {ScrollView, StyleSheet, Text, View} from 'react-native';
 
 import {NeonButton} from '../components/NeonButton';
 import {PageHeader} from '../components/PageHeader';
+import {
+  formatMotionHistoryValue,
+  getMotionHistoryMetric,
+  hasMotionHistoryValue,
+} from '../data/motionHistory';
 import {colors, neonShadow, radii, spacing} from '../theme/theme';
 
-const toneStyles = {
-  good: {
-    badgeBorderColor: 'rgba(89, 255, 168, 0.38)',
-    badgeBackgroundColor: 'rgba(89, 255, 168, 0.14)',
-    badgeTextColor: colors.success,
-  },
-  neutral: {
-    badgeBorderColor: 'rgba(126, 249, 255, 0.28)',
-    badgeBackgroundColor: 'rgba(126, 249, 255, 0.12)',
-    badgeTextColor: colors.accent,
-  },
-  warn: {
-    badgeBorderColor: 'rgba(255, 182, 88, 0.35)',
-    badgeBackgroundColor: 'rgba(255, 182, 88, 0.14)',
-    badgeTextColor: '#FFC766',
-  },
-  alert: {
-    badgeBorderColor: 'rgba(255, 95, 95, 0.36)',
-    badgeBackgroundColor: 'rgba(255, 95, 95, 0.14)',
-    badgeTextColor: '#FF9C9C',
-  },
-};
-
-function MetricTile({label, value, detail}) {
+function SummaryTile({label, value}) {
   return (
-    <View style={styles.metricTile}>
-      <Text style={styles.metricValue}>{value}</Text>
-      <Text style={styles.metricLabel}>{label}</Text>
-      <Text style={styles.metricDetail}>{detail}</Text>
+    <View style={styles.summaryTile}>
+      <Text style={styles.summaryLabel}>{label}</Text>
+      <Text style={styles.summaryValue}>{value}</Text>
     </View>
   );
 }
 
-function AssessmentCard({item}) {
-  const tone = toneStyles[item.tone] || toneStyles.neutral;
-
+function HistoryCard({entry, metricId}) {
   return (
-    <View style={styles.assessmentCard}>
-      <View style={styles.assessmentTopRow}>
-        <View style={styles.assessmentTitleWrap}>
-          <Text style={styles.assessmentLabel}>{item.label}</Text>
-          <Text style={styles.assessmentValue}>{item.value}</Text>
-        </View>
-        <View
-          style={[
-            styles.assessmentBadge,
-            {
-              borderColor: tone.badgeBorderColor,
-              backgroundColor: tone.badgeBackgroundColor,
-            },
-          ]}>
-          <Text style={[styles.assessmentBadgeLabel, {color: tone.badgeTextColor}]}>{item.status}</Text>
-        </View>
-      </View>
-      <Text style={styles.assessmentNote}>{item.note}</Text>
+    <View style={styles.historyCard}>
+      <Text style={styles.historyLabel}>{entry.athleteName}</Text>
+      <Text style={styles.historyValue}>{formatMotionHistoryValue(metricId, entry[metricId])}</Text>
+      <Text style={styles.historyMeta}>{entry.date}</Text>
+      <Text numberOfLines={1} style={styles.historyClip}>{entry.clipName}</Text>
+      <Text numberOfLines={3} style={styles.historySummary}>{entry.summary}</Text>
     </View>
   );
 }
 
-export function MetricsScreen({analysisInput, analysisResult, onGoHome, onOpenScreen, selectedVideo, trackingStatus}) {
+export function MetricsScreen({
+  analysisResult,
+  historyMetricId,
+  motionHistory,
+  onGoHome,
+  onOpenScreen,
+}) {
+  const metric = getMotionHistoryMetric(historyMetricId);
+  const entries = (motionHistory || []).filter(entry => hasMotionHistoryValue(metric.id, entry[metric.id]));
+  const currentValue = hasMotionHistoryValue(metric.id, analysisResult?.[metric.id])
+    ? formatMotionHistoryValue(metric.id, analysisResult?.[metric.id])
+    : 'Awaiting AI';
+
   return (
-    <ScrollView style={styles.safeArea} contentContainerStyle={styles.content}>
+    <ScrollView contentContainerStyle={styles.content} style={styles.safeArea}>
       <PageHeader onHomePress={onGoHome} />
 
-      <View style={styles.card}>
-        <Text style={styles.cardEyebrow}>Tabulated Figures</Text>
-        <Text style={styles.cardTitle}>Motion Stats</Text>
+      <View style={styles.heroCard}>
+        <Text style={styles.cardEyebrow}>Metric History</Text>
+        <Text style={styles.cardTitle}>{metric.historyTitle}</Text>
         <Text style={styles.cardCopy}>
-          This page gathers the current rep figures into one place so the coach can see the whole motion profile at once.
+          One grid, one stat, one clean readout of what Motion Lab has stored so far.
         </Text>
       </View>
 
-      {analysisResult ? (
-        <>
-          <View style={styles.metricGrid}>
-            <MetricTile
-              detail="Contact reach minus standing reach"
-              label="Vertical Leap"
-              value={`${analysisResult.verticalLeapInches} in`}
-            />
-            <MetricTile
-              detail={analysisResult.ballSpeedSource === 'ball-track' ? 'Detected directly from the tracked ball trail' : analysisResult.ballSpeedSource === 'tracked-estimate' ? 'Auto-estimated from the tracked swing model' : 'Ball travel distance over release time'}
-              label="Ball Speed"
-              value={`${analysisResult.ballSpeedMph} MPH`}
-            />
-            <MetricTile
-              detail="Pause severity through the swing"
-              label="Hitch Severity"
-              value={analysisResult.hitchSeverity}
-            />
-            <MetricTile
-              detail="Current session contact timing label"
-              label="Contact Point"
-              value={analysisResult.contactPoint}
-            />
-          </View>
+      <View style={styles.summaryRow}>
+        <SummaryTile label="Current" value={currentValue} />
+        <SummaryTile label="Sessions" value={`${entries.length}`} />
+      </View>
 
-          <View style={styles.sectionCard}>
-            <Text style={styles.sectionTitle}>Current Rep Breakdown</Text>
-            <Text style={styles.sectionCopy}>
-              Every current figure is tabulated below so the rep can be reviewed as a full motion snapshot instead of a single number.
-            </Text>
-          </View>
-
-          <View style={styles.assessmentList}>
-            {(analysisResult.assessments || []).map(item => (
-              <AssessmentCard item={item} key={item.id} />
-            ))}
-          </View>
-
-          <View style={styles.formulaCard}>
-            <Text style={styles.formulaTitle}>Auto-Filled Machine Read</Text>
-            <Text style={styles.formulaCopy}>Standing reach: {analysisInput.standingReachInches || '--'} in</Text>
-            <Text style={styles.formulaCopy}>Contact reach: {analysisInput.contactReachInches || '--'} in</Text>
-            <Text style={styles.formulaCopy}>Ball travel: {analysisInput.ballTravelFeet || '--'} ft</Text>
-            <Text style={styles.formulaCopy}>Release frames: {analysisInput.releaseFrames || '--'}</Text>
-            <Text style={styles.formulaCopy}>FPS: {analysisInput.fps || '--'}</Text>
-            <Text style={styles.formulaCopy}>Hitch frames: {analysisInput.hitchFrames || '--'}</Text>
-            <Text style={styles.formulaCopy}>Contact point: {analysisInput.contactPoint}</Text>
-            <Text style={styles.formulaCopy}>Landing stability: {analysisInput.landingStability}</Text>
-            <Text style={styles.formulaCopy}>Current clip: {selectedVideo?.fileName || 'None selected'}</Text>
-            <Text style={styles.formulaCopy}>Ball speed source: {analysisResult.ballSpeedSource === 'ball-track' ? 'Direct ball trail' : analysisResult.ballSpeedSource === 'tracked-estimate' ? 'Tracked swing model' : analysisResult.ballSpeedSource === 'derived-flight' ? 'Derived clip-timing read' : 'Pending'}</Text>
-            <Text style={styles.formulaCopy}>Peak hand speed: {analysisResult.peakHandSpeedMph || '--'} MPH</Text>
-            <Text style={styles.formulaCopy}>Tracked ball frames: {analysisResult.trackedBallFrames || '--'}</Text>
-            <Text style={styles.formulaCopy}>Ball tracking quality: {analysisResult.ballTrackingApplied ? `${Math.round(Number(analysisResult.ballTrackingQuality || 0) * 100)}%` : '--'}</Text>
-            <Text style={styles.formulaCopy}>Tracking status: {trackingStatus === 'running' ? 'Tracking now' : trackingStatus === 'ready' ? 'Tracked clip ready' : 'Awaiting machine read'}</Text>
-          </View>
-        </>
+      {entries.length ? (
+        <View style={styles.historyGrid}>
+          {entries.map(entry => (
+            <HistoryCard entry={entry} key={entry.id} metricId={metric.id} />
+          ))}
+        </View>
       ) : (
         <View style={styles.emptyCard}>
-          <Text style={styles.emptyTitle}>No stats yet</Text>
-          <Text style={styles.emptyBody}>Run the Motion Lab analysis to populate this page.</Text>
+          <Text style={styles.emptyTitle}>No history yet</Text>
+          <Text style={styles.emptyBody}>{metric.emptyMessage}</Text>
         </View>
       )}
 
       <View style={styles.buttonStack}>
-        <NeonButton label="Open Recorder" onPress={() => onOpenScreen('motion-lab')} />
-        <NeonButton label="Open Swing Tracker" onPress={() => onOpenScreen('swing-tracker')} tone="secondary" />
-        <NeonButton label="Open Ball Speed" onPress={() => onOpenScreen('ball-speed-tool')} tone="secondary" />
+        <NeonButton label="Back to Motion Lab" onPress={() => onOpenScreen('motion-lab')} />
       </View>
     </ScrollView>
   );
@@ -158,7 +90,7 @@ const styles = StyleSheet.create({
     paddingTop: spacing.xl,
     paddingBottom: spacing.xxl,
   },
-  card: {
+  heroCard: {
     borderRadius: radii.lg,
     borderWidth: 1,
     borderColor: colors.stroke,
@@ -186,141 +118,89 @@ const styles = StyleSheet.create({
     fontSize: 14,
     lineHeight: 22,
   },
-  metricGrid: {
+  summaryRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: spacing.lg,
+  },
+  summaryTile: {
+    width: '48%',
+    borderRadius: radii.md,
+    borderWidth: 1,
+    borderColor: colors.stroke,
+    backgroundColor: 'rgba(24, 10, 34, 0.92)',
+    padding: spacing.md,
+  },
+  summaryLabel: {
+    color: colors.textDim,
+    fontSize: 11,
+    textTransform: 'uppercase',
+    letterSpacing: 1.1,
+    marginBottom: 6,
+  },
+  summaryValue: {
+    color: colors.primarySoft,
+    fontFamily: 'Bangers',
+    fontSize: 28,
+    letterSpacing: 0.7,
+  },
+  historyGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'space-between',
     marginBottom: spacing.lg,
   },
-  metricTile: {
+  historyCard: {
     width: '48%',
     borderRadius: radii.md,
     borderWidth: 1,
-    borderColor: colors.stroke,
-    backgroundColor: 'rgba(27, 7, 36, 0.92)',
-    padding: spacing.md,
-    marginBottom: spacing.md,
-  },
-  metricValue: {
-    color: colors.primarySoft,
-    fontFamily: 'Bangers',
-    fontSize: 30,
-    letterSpacing: 0.8,
-    marginBottom: 4,
-  },
-  metricLabel: {
-    color: colors.text,
-    fontSize: 15,
-    fontWeight: '700',
-    marginBottom: spacing.xs,
-  },
-  metricDetail: {
-    color: colors.textDim,
-    fontSize: 13,
-    lineHeight: 20,
-  },
-  sectionCard: {
-    borderRadius: radii.md,
-    borderWidth: 1,
     borderColor: 'rgba(126, 249, 255, 0.18)',
-    backgroundColor: 'rgba(17, 11, 28, 0.88)',
+    backgroundColor: 'rgba(14, 7, 23, 0.84)',
     padding: spacing.md,
     marginBottom: spacing.md,
   },
-  sectionTitle: {
-    color: colors.text,
-    fontFamily: 'Bangers',
-    fontSize: 28,
-    letterSpacing: 0.7,
-    marginBottom: spacing.xs,
-  },
-  sectionCopy: {
-    color: colors.textMuted,
-    fontSize: 14,
-    lineHeight: 21,
-  },
-  assessmentList: {
-    gap: spacing.md,
-    marginBottom: spacing.lg,
-  },
-  assessmentCard: {
-    borderRadius: radii.md,
-    borderWidth: 1,
-    borderColor: colors.stroke,
-    backgroundColor: 'rgba(17, 11, 28, 0.92)',
-    padding: spacing.md,
-  },
-  assessmentTopRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: spacing.sm,
-    gap: spacing.sm,
-  },
-  assessmentTitleWrap: {
-    flex: 1,
-  },
-  assessmentLabel: {
-    color: colors.text,
-    fontSize: 14,
-    fontWeight: '700',
-    marginBottom: 4,
-  },
-  assessmentValue: {
-    color: colors.primarySoft,
-    fontFamily: 'Bangers',
-    fontSize: 28,
-    letterSpacing: 0.7,
-  },
-  assessmentBadge: {
-    borderRadius: radii.round,
-    borderWidth: 1,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 8,
-  },
-  assessmentBadgeLabel: {
+  historyLabel: {
+    color: colors.accent,
     fontSize: 11,
-    fontWeight: '700',
     textTransform: 'uppercase',
     letterSpacing: 1.1,
+    marginBottom: 6,
   },
-  assessmentNote: {
+  historyValue: {
+    color: colors.text,
+    fontFamily: 'Bangers',
+    fontSize: 26,
+    letterSpacing: 0.7,
+    marginBottom: 4,
+  },
+  historyMeta: {
     color: colors.textMuted,
-    fontSize: 14,
-    lineHeight: 21,
+    fontSize: 12,
+    marginBottom: 2,
   },
-  formulaCard: {
-    borderRadius: radii.md,
-    borderWidth: 1,
-    borderColor: 'rgba(126, 249, 255, 0.18)',
-    backgroundColor: 'rgba(17, 11, 28, 0.88)',
-    padding: spacing.md,
-    marginBottom: spacing.lg,
+  historyClip: {
+    color: colors.text,
+    fontSize: 13,
+    marginBottom: spacing.xs,
   },
-  formulaTitle: {
-    color: colors.primarySoft,
-    fontSize: 15,
-    fontWeight: '700',
-    marginBottom: spacing.sm,
-  },
-  formulaCopy: {
-    color: colors.textMuted,
-    fontSize: 14,
-    lineHeight: 21,
+  historySummary: {
+    color: colors.textDim,
+    fontSize: 12,
+    lineHeight: 18,
   },
   emptyCard: {
     borderRadius: radii.md,
     borderWidth: 1,
-    borderColor: colors.stroke,
-    backgroundColor: 'rgba(17, 11, 28, 0.9)',
+    borderColor: 'rgba(126, 249, 255, 0.18)',
+    backgroundColor: 'rgba(14, 7, 23, 0.84)',
     padding: spacing.lg,
     marginBottom: spacing.lg,
   },
   emptyTitle: {
     color: colors.text,
     fontFamily: 'Bangers',
-    fontSize: 28,
-    letterSpacing: 0.8,
+    fontSize: 30,
+    letterSpacing: 0.7,
     marginBottom: spacing.xs,
   },
   emptyBody: {

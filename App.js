@@ -3,6 +3,7 @@ import {BackHandler, StatusBar, View} from 'react-native';
 
 import {SplashOverlay} from './src/components/SplashOverlay';
 import {initialAnalysisInput, initialCoachBoard, initialProfiles} from './src/data/dashboard';
+import {createMotionHistoryEntry, createMotionHistoryFromProfiles} from './src/data/motionHistory';
 import {analyzeMotionVideo} from './src/native/motionTracker';
 import {AboutScreen} from './src/screens/AboutScreen';
 import {BallSpeedScreen} from './src/screens/BallSpeedScreen';
@@ -18,6 +19,37 @@ import {runVideoAnalysis} from './src/utils/analysis';
 
 const HOME_SCREEN = 'home';
 
+function buildAnalysisInputFromTracking(result) {
+  return {
+    standingReachInches:
+      Number.isFinite(result?.standingReachInches) && result.standingReachInches > 0
+        ? `${Number(result.standingReachInches).toFixed(1)}`
+        : '',
+    contactReachInches:
+      Number.isFinite(result?.contactReachInches) && result.contactReachInches > 0
+        ? `${Number(result.contactReachInches).toFixed(1)}`
+        : '',
+    ballTravelFeet:
+      Number.isFinite(result?.detectedBallTravelFeet) && result.detectedBallTravelFeet > 0
+        ? `${Number(result.detectedBallTravelFeet).toFixed(1)}`
+        : '',
+    releaseFrames:
+      Number.isFinite(result?.releaseFrames) && result.releaseFrames > 0
+        ? `${result.releaseFrames}`
+        : '',
+    fps:
+      Number.isFinite(result?.fps) && result.fps > 0
+        ? `${Math.round(result.fps)}`
+        : '',
+    hitchFrames:
+      Number.isFinite(result?.hitchFrames) && result.hitchFrames >= 0
+        ? `${result.hitchFrames}`
+        : '',
+    contactPoint: result?.contactPoint || 'ideal',
+    landingStability: result?.landingStability || 'steady',
+  };
+}
+
 function buildSessionSnapshot(analysisResult, selectedVideo) {
   return {
     id: `${Date.now()}`,
@@ -28,7 +60,11 @@ function buildSessionSnapshot(analysisResult, selectedVideo) {
     }),
     verticalLeapInches: analysisResult.verticalLeapInches,
     ballSpeedMph: analysisResult.ballSpeedMph,
+    peakHandSpeedMph: analysisResult.peakHandSpeedMph,
+    hitchFrames: analysisResult.hitchFrames,
     hitchSeverity: analysisResult.hitchSeverity,
+    contactPoint: analysisResult.contactPoint,
+    landingStability: analysisResult.landingStability,
     summary: analysisResult.summary,
     clipName: selectedVideo?.fileName || 'Current session',
   };
@@ -45,6 +81,8 @@ export default function App() {
   const [analysisResult, setAnalysisResult] = useState(() => runVideoAnalysis(initialAnalysisInput, null));
   const [coachBoard, setCoachBoard] = useState(initialCoachBoard);
   const [profiles, setProfiles] = useState(initialProfiles);
+  const [motionHistory, setMotionHistory] = useState(() => createMotionHistoryFromProfiles(initialProfiles));
+  const [selectedHistoryMetricId, setSelectedHistoryMetricId] = useState('verticalLeapInches');
   const screenStackRef = useRef(screenStack);
 
   const activeScreen = screenStack[screenStack.length - 1] || HOME_SCREEN;
@@ -97,7 +135,6 @@ export default function App() {
     [],
   );
 
-
   const handleAnalyzeRep = async () => {
     if (!selectedVideo?.uri) {
       setTrackingStatus('error');
@@ -119,36 +156,14 @@ export default function App() {
       setTrackingStatus('running');
       setTrackingError('');
       const result = await analyzeMotionVideo(selectedVideo.uri);
+      const nextAnalysisInput = buildAnalysisInputFromTracking(result);
+      const nextAnalysisResult = runVideoAnalysis(nextAnalysisInput, result);
+
       setTrackingResult(result);
       setTrackingStatus('ready');
-      setAnalysisInput({
-        standingReachInches:
-          Number.isFinite(result?.standingReachInches) && result.standingReachInches > 0
-            ? `${Number(result.standingReachInches).toFixed(1)}`
-            : '',
-        contactReachInches:
-          Number.isFinite(result?.contactReachInches) && result.contactReachInches > 0
-            ? `${Number(result.contactReachInches).toFixed(1)}`
-            : '',
-        ballTravelFeet:
-          Number.isFinite(result?.detectedBallTravelFeet) && result.detectedBallTravelFeet > 0
-            ? `${Number(result.detectedBallTravelFeet).toFixed(1)}`
-            : '',
-        releaseFrames:
-          Number.isFinite(result?.releaseFrames) && result.releaseFrames > 0
-            ? `${result.releaseFrames}`
-            : '',
-        fps:
-          Number.isFinite(result?.fps) && result.fps > 0
-            ? `${Math.round(result.fps)}`
-            : '',
-        hitchFrames:
-          Number.isFinite(result?.hitchFrames) && result.hitchFrames >= 0
-            ? `${result.hitchFrames}`
-            : '',
-        contactPoint: result?.contactPoint || 'ideal',
-        landingStability: result?.landingStability || 'steady',
-      });
+      setAnalysisInput(nextAnalysisInput);
+      setAnalysisResult(nextAnalysisResult);
+      setMotionHistory(current => [createMotionHistoryEntry(nextAnalysisResult, selectedVideo), ...current].slice(0, 60));
     } catch (error) {
       setTrackingResult(null);
       setTrackingStatus('error');
@@ -162,6 +177,11 @@ export default function App() {
     setTrackingResult(null);
     setTrackingStatus('idle');
     setTrackingError('');
+  };
+
+  const handleOpenMetricHistory = metricId => {
+    setSelectedHistoryMetricId(metricId);
+    navigateToScreen('motion-stats');
   };
 
   const handleAdjustBoard = (field, deltaOrValue, isStat = false) => {
@@ -219,11 +239,10 @@ export default function App() {
   if (activeScreen === 'motion-lab') {
     screen = (
       <MotionLabScreen
-        analysisInput={analysisInput}
         analysisResult={analysisResult}
         onAnalyzeRep={handleAnalyzeRep}
+        onOpenMetricHistory={handleOpenMetricHistory}
         onSelectVideo={handleSelectVideo}
-        onTrackSwing={handleTrackSwing}
         selectedVideo={selectedVideo}
         trackingError={trackingError}
         trackingResult={trackingResult}
@@ -271,10 +290,9 @@ export default function App() {
   if (activeScreen === 'motion-stats' || activeScreen === 'jump-speed') {
     screen = (
       <MetricsScreen
-        analysisInput={analysisInput}
         analysisResult={analysisResult}
-        selectedVideo={selectedVideo}
-        trackingStatus={trackingStatus}
+        historyMetricId={selectedHistoryMetricId}
+        motionHistory={motionHistory}
         {...sharedScreenProps}
       />
     );

@@ -1,45 +1,14 @@
-import {Alert, Linking, PermissionsAndroid, Platform, ScrollView, StyleSheet, Text, View} from 'react-native';
+import {Alert, Linking, PermissionsAndroid, Platform, Pressable, ScrollView, StyleSheet, Text, View} from 'react-native';
 import {launchCamera, launchImageLibrary} from 'react-native-image-picker';
 import Video from 'react-native-video';
 
 import {NeonButton} from '../components/NeonButton';
 import {PageHeader} from '../components/PageHeader';
+import {formatMotionHistoryValue, motionHistoryMetrics} from '../data/motionHistory';
 import {colors, neonShadow, radii, spacing} from '../theme/theme';
 
 function formatPercent(value) {
   return `${Math.round(Number(value || 0) * 100)}%`;
-}
-
-function formatContactPoint(value) {
-  if (value === 'in-front') {
-    return 'In Front';
-  }
-
-  if (value === 'behind') {
-    return 'Behind';
-  }
-
-  return 'Ideal';
-}
-
-function formatLandingStability(value) {
-  if (value === 'off-balance') {
-    return 'Off Balance';
-  }
-
-  if (value === 'steady') {
-    return 'Steady';
-  }
-
-  return 'Awaiting AI';
-}
-
-function toMachineValue(value, suffix = '') {
-  if (`${value ?? ''}`.trim().length === 0) {
-    return 'Awaiting AI';
-  }
-
-  return suffix ? `${value}${suffix}` : `${value}`;
 }
 
 function TrailDot({style, glow = 'pink'}) {
@@ -55,44 +24,43 @@ function HitchFlag({style}) {
   );
 }
 
-function MetricTile({label, value, detail}) {
+function PlaybackSettingTile({detail, disabled = false, label, onPress, value}) {
+  const content = (
+    <>
+      <Text style={styles.settingLabel}>{label}</Text>
+      <Text style={styles.settingValue}>{value}</Text>
+      <Text style={styles.settingDetail}>{detail}</Text>
+    </>
+  );
+
+  if (onPress && !disabled) {
+    return (
+      <Pressable onPress={onPress} style={({pressed}) => [styles.settingTile, pressed && styles.settingTilePressed]}>
+        {content}
+      </Pressable>
+    );
+  }
+
+  return <View style={[styles.settingTile, disabled && styles.settingTileDisabled]}>{content}</View>;
+}
+
+function MetricLinkTile({detail, label, onPress, value}) {
   return (
-    <View style={styles.metricTile}>
-      <Text style={styles.metricValue}>{value}</Text>
+    <Pressable onPress={onPress} style={({pressed}) => [styles.metricTile, pressed && styles.metricTilePressed]}>
       <Text style={styles.metricLabel}>{label}</Text>
+      <Text style={styles.metricValue}>{value}</Text>
       <Text style={styles.metricDetail}>{detail}</Text>
-    </View>
+      <Text style={styles.metricLink}>Open history</Text>
+    </Pressable>
   );
 }
 
-function AssessmentTile({item}) {
+function AdviceTile({item}) {
   return (
-    <View style={styles.assessmentTile}>
-      <Text style={styles.assessmentTileLabel}>{item.label}</Text>
-      <Text style={styles.assessmentTileValue}>{item.value}</Text>
-      <Text style={styles.assessmentTileStatus}>{item.status}</Text>
-    </View>
-  );
-}
-
-function AdviceRow({item}) {
-  return (
-    <View style={styles.adviceRow}>
-      <View style={styles.adviceDot} />
-      <View style={styles.adviceTextWrap}>
-        <Text style={styles.adviceTitle}>{item.title}</Text>
-        <Text style={styles.adviceBody}>{item.body}</Text>
-      </View>
-    </View>
-  );
-}
-
-function MachineReadCard({label, value, detail}) {
-  return (
-    <View style={styles.machineReadCard}>
-      <Text style={styles.machineReadLabel}>{label}</Text>
-      <Text style={styles.machineReadValue}>{value}</Text>
-      <Text style={styles.machineReadDetail}>{detail}</Text>
+    <View style={styles.adviceTile}>
+      <Text style={styles.adviceLabel}>Advice</Text>
+      <Text style={styles.adviceTitle}>{item.title}</Text>
+      <Text style={styles.adviceBody}>{item.body}</Text>
     </View>
   );
 }
@@ -146,11 +114,31 @@ async function requestAndroidVideoCapturePermissions() {
   return false;
 }
 
+function buildStatusCopy({trackingError, trackingReady, trackingResult, trackingStatus}) {
+  if (trackingStatus === 'running') {
+    return 'Reading pose, ball flight, and timing from the active rep.';
+  }
+
+  if (trackingError) {
+    return trackingError;
+  }
+
+  if (trackingReady) {
+    const ballFrames = Number(trackingResult?.ballTrackedFrames || 0);
+    return ballFrames > 1
+      ? `Swing and ball tracking locked. Ball trail quality ${formatPercent(trackingResult?.ballTrackingQuality)}.`
+      : `Swing path locked. Ball trail is still building from the current clip.`;
+  }
+
+  return 'Load one rep, run one pass, and review the current snapshot below.';
+}
+
 export function MotionLabScreen({
-  analysisInput,
   analysisResult,
   onAnalyzeRep,
   onGoHome,
+  onOpenMetricHistory,
+  onOpenScreen,
   onSelectVideo,
   selectedVideo,
   trackingError,
@@ -209,112 +197,65 @@ export function MotionLabScreen({
   const ballTrackingApplied = analysisResult?.ballTrackingApplied;
   const hitchPoint = analysisResult?.hitchFrames >= 3 ? handTrail[Math.min(1, handTrail.length - 1)] : null;
   const trackingReady = trackingStatus === 'ready' && trackingResult;
-  const assessmentHighlights = (analysisResult?.assessments || [])
-    .filter(item => ['Swing Tracking', 'Ball Tracking', 'Vertical Leap', 'Ball Speed', 'Hitch Frames', 'Contact Point'].includes(item.label))
-    .slice(0, 6);
-  const metricTiles = analysisResult
-    ? [
-        {
-          label: 'Vertical Leap',
-          value: `${analysisResult.verticalLeapInches} in`,
-          detail: 'Jump output from the current rep',
-        },
-        {
-          label: 'Ball Speed',
-          value: `${analysisResult.ballSpeedMph} MPH`,
-          detail:
-            analysisResult.ballSpeedSource === 'ball-track'
-              ? 'Direct ball trail read'
-              : analysisResult.ballSpeedSource === 'tracked-estimate'
-                ? 'Tracked hand-speed estimate'
-                : 'Derived from clip timing',
-        },
-        {
-          label: 'Peak Hand',
-          value: `${analysisResult.peakHandSpeedMph || 0} MPH`,
-          detail: 'Tracked hand speed through contact',
-        },
-        {
-          label: 'Hitch Frames',
-          value: `${analysisResult.hitchFrames}`,
-          detail: `${analysisResult.hitchSeverity} swing interruption`,
-        },
-        {
-          label: 'Ball Frames',
-          value: `${analysisResult.trackedBallFrames || 0}`,
-          detail: ballTrackingApplied ? 'Direct trail frames locked' : 'Waiting on direct ball trail',
-        },
-        {
-          label: 'Contact Point',
-          value: formatContactPoint(analysisResult.contactPoint),
-          detail: `Tracking quality ${formatPercent(ballTrackingApplied ? analysisResult.ballTrackingQuality : analysisResult.trackingQuality)}`,
-        },
-      ]
-    : [];
-  const machineReadTiles = [
+  const statusCopy = buildStatusCopy({trackingError, trackingReady, trackingResult, trackingStatus});
+  const playbackTiles = [
     {
-      label: 'Standing Reach',
-      value: toMachineValue(analysisInput.standingReachInches, ' in'),
-      detail: 'Auto-filled baseline reach from the pose model',
+      label: 'Playback',
+      value: selectedVideo?.uri ? 'Clip Ready' : 'No Clip',
+      detail: selectedVideo?.duration ? `${selectedVideo.duration}s loaded` : 'Record or import a rep',
     },
     {
-      label: 'Contact Reach',
-      value: toMachineValue(analysisInput.contactReachInches, ' in'),
-      detail: 'Auto-filled contact height from the tracked rep',
+      label: 'Overlay',
+      value: trackingReady ? (ballTrackingApplied ? 'Hand + Ball' : 'Hand Trail') : 'Awaiting AI',
+      detail: trackingReady ? 'Mounted over the current rep' : 'Analyze the clip to mount the trail',
     },
     {
-      label: 'Ball Travel',
-      value: toMachineValue(analysisInput.ballTravelFeet, ' ft'),
-      detail: 'Filled from the ball flight after contact',
+      label: 'Tracking',
+      value: trackingStatus === 'running' ? 'Running' : trackingReady ? 'Locked' : trackingError ? 'Retry' : 'Idle',
+      detail: trackingReady ? `Swing ${formatPercent(trackingResult?.trackingQuality)}` : 'One pass fills the metrics',
     },
     {
-      label: 'Release Frames',
-      value: toMachineValue(analysisInput.releaseFrames),
-      detail: 'Release timing pulled from the tracked clip',
-    },
-    {
-      label: 'FPS',
-      value: toMachineValue(analysisInput.fps),
-      detail: 'Video frame rate read from the file metadata',
-    },
-    {
-      label: 'Landing',
-      value: formatLandingStability(analysisInput.landingStability),
-      detail: 'Landing balance read from post-contact body drift',
+      label: 'Playback View',
+      value: selectedVideo?.uri ? 'Open' : 'Disabled',
+      detail: selectedVideo?.uri ? 'Launch the full playback page' : 'Load a rep first',
+      onPress: selectedVideo?.uri ? () => onOpenScreen('neon-playback') : undefined,
+      disabled: !selectedVideo?.uri,
     },
   ];
+  const metricTiles = motionHistoryMetrics.map(metric => ({
+    id: metric.id,
+    label: metric.label,
+    value: trackingReady ? formatMotionHistoryValue(metric.id, analysisResult?.[metric.id]) : 'Awaiting AI',
+    detail: 'Tap to open the saved history grid.',
+  }));
+  const adviceTiles = trackingReady
+    ? (analysisResult?.advice || []).slice(0, 4)
+    : [
+        {
+          title: 'Run Motion Lab',
+          body: 'Analyze one clip to fill the coaching cards from the AI read.',
+        },
+        {
+          title: 'Keep the whole rep in frame',
+          body: 'A side view with the athlete and ball visible gives the tracker the cleanest pass.',
+        },
+      ];
 
   return (
-    <ScrollView
-      contentContainerStyle={styles.content}
-      showsVerticalScrollIndicator={false}
-      style={styles.safeArea}>
+    <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false} style={styles.safeArea}>
       <PageHeader onHomePress={onGoHome} />
 
-      <View style={styles.heroCard}>
-        <Text style={styles.heroEyebrow}>Motion Lab</Text>
-        <Text style={styles.heroTitle}>Machine-Filled Session Read</Text>
-        <Text style={styles.heroCopy}>
-          Record or import a clip, press one analysis button, and let the model fill the swing trail, ball tracking, jump numbers, timing, and coaching cues from the video.
-        </Text>
-      </View>
-
-      <View style={styles.actionRow}>
-        <View style={styles.actionButtonWrap}>
-          <NeonButton label="Record Video" onPress={handleCameraLaunch} />
+      <View style={styles.stageCard}>
+        <View style={styles.stageHeader}>
+          <Text style={styles.stageTitle}>Motion Lab</Text>
+          <Text style={styles.stageMeta}>{selectedVideo?.fileName || 'No active clip'}</Text>
         </View>
-        <View style={styles.actionButtonWrap}>
-          <NeonButton label="Choose Video" onPress={handleLibraryLaunch} tone="secondary" />
-        </View>
-      </View>
 
-      <View style={styles.videoShell}>
-        <Text style={styles.sectionLabel}>Active Clip</Text>
         <View style={styles.videoFrame}>
-          {selectedVideo && selectedVideo.uri ? (
+          {selectedVideo?.uri ? (
             <>
               <Video controls paused resizeMode="contain" source={{uri: selectedVideo.uri}} style={styles.video} />
-              {analysisResult ? (
+              {trackingReady ? (
                 <View pointerEvents="none" style={styles.overlayLayer}>
                   <View style={styles.swingLane} />
                   <View style={styles.contactGate} />
@@ -330,99 +271,65 @@ export function MotionLabScreen({
             </>
           ) : (
             <View style={styles.emptyFrame}>
-              <Text style={styles.emptyTitle}>No clip loaded</Text>
-              <Text style={styles.emptyCopy}>Bring in a player rep and Motion Lab will fill the session from the video instead of asking for coach input.</Text>
+              <Text style={styles.emptyTitle}>Load a rep</Text>
+              <Text style={styles.emptyCopy}>Record or import one volleyball rep to start the Motion Lab pass.</Text>
             </View>
           )}
         </View>
-        <View style={styles.clipMetaGrid}>
-          <View style={styles.clipMetaCard}>
-            <Text style={styles.clipMetaLabel}>Clip</Text>
-            <Text numberOfLines={1} style={styles.clipMetaValue}>{selectedVideo?.fileName || 'Waiting on video'}</Text>
+
+        <View style={styles.actionRow}>
+          <View style={styles.actionButtonWrap}>
+            <NeonButton label="Record" onPress={handleCameraLaunch} />
           </View>
-          <View style={styles.clipMetaCard}>
-            <Text style={styles.clipMetaLabel}>Duration</Text>
-            <Text style={styles.clipMetaValue}>{selectedVideo?.duration ? `${selectedVideo.duration}s` : 'Unknown'}</Text>
+          <View style={styles.actionButtonWrap}>
+            <NeonButton label="Import" onPress={handleLibraryLaunch} tone="secondary" />
+          </View>
+          <View style={styles.actionButtonWrap}>
+            <NeonButton
+              label={trackingStatus === 'running' ? 'Analyzing...' : 'Analyze'}
+              onPress={onAnalyzeRep}
+            />
           </View>
         </View>
-      </View>
 
-      <View style={styles.analysisActionCard}>
-        <Text style={styles.analysisActionTitle}>Run Full Motion Lab</Text>
-        <Text style={styles.analysisActionCopy}>
-          One pass runs swing tracking, ball tracking, jump math, release timing, landing stability, and the coaching assessment from the active rep.
-        </Text>
-        <NeonButton
-          label={trackingStatus === 'running' ? 'Analyzing Motion Lab...' : 'Analyze Motion Lab'}
-          onPress={onAnalyzeRep}
-        />
-      </View>
+        <View style={styles.statusStrip}>
+          <Text style={styles.statusLabel}>Playback Settings</Text>
+          <Text style={styles.statusCopy}>{statusCopy}</Text>
+        </View>
 
-      <View style={styles.statusCard}>
-        <Text style={styles.sectionLabel}>Analysis Status</Text>
-        {trackingStatus === 'running' ? (
-          <Text style={styles.statusCopy}>The app is reading pose, tracking the ball flight, filling the machine fields, and updating the shared motion readout.</Text>
-        ) : trackingReady ? (
-          <>
-            <Text style={styles.statusTitle}>Tracked {trackingResult.dominantHand} hand with {Number(trackingResult.trackedFrames || 0).toFixed(0)} swing samples.</Text>
-            <Text style={styles.statusCopy}>
-              {Number(trackingResult.ballTrackedFrames || 0) > 1
-                ? `The direct ball pass locked ${Number(trackingResult.ballTrackedFrames).toFixed(0)} frames and filled the current speed and timing readout from the clip.`
-                : 'The swing path is locked. The ball trail is still falling back to the projected flight until the direct ball pass catches more frames.'}
-            </Text>
-            <Text style={styles.statusMeta}>Swing track: {formatPercent(trackingResult.trackingQuality)}</Text>
-            <Text style={styles.statusMeta}>Ball track: {Number(trackingResult.ballTrackedFrames || 0) > 1 ? formatPercent(trackingResult.ballTrackingQuality) : 'Pending direct lock'}</Text>
-          </>
-        ) : trackingError ? (
-          <>
-            <Text style={styles.statusTitle}>Analysis needs another pass</Text>
-            <Text style={styles.statusCopy}>{trackingError}</Text>
-          </>
-        ) : (
-          <Text style={styles.statusCopy}>Load a clip and press Analyze Motion Lab. The session cards below will be filled only by the tracker and the video metadata.</Text>
-        )}
-      </View>
-
-      <View style={styles.machineCardShell}>
-        <Text style={styles.sectionLabel}>AI Session Read</Text>
-        <View style={styles.machineGrid}>
-          {machineReadTiles.map(item => (
-            <MachineReadCard detail={item.detail} key={item.label} label={item.label} value={item.value} />
+        <View style={styles.settingGrid}>
+          {playbackTiles.map(item => (
+            <PlaybackSettingTile
+              detail={item.detail}
+              disabled={item.disabled}
+              key={item.label}
+              label={item.label}
+              onPress={item.onPress}
+              value={item.value}
+            />
           ))}
         </View>
-        <Text style={styles.machineFootnote}>No coach typing is needed here. These values are filled from the tracker, pose read, ball read, and video metadata.</Text>
       </View>
 
-      {analysisResult ? (
-        <>
-          <View style={styles.resultsCard}>
-            <Text style={styles.cardEyebrow}>Tabulated Output</Text>
-            <Text style={styles.resultsTitle}>{analysisResult.summary}</Text>
-            <Text style={styles.resultsCopy}>
-              The active rep is being held here as one Motion Lab workspace, with the stat grid, assessment grid, and correction cues all tied to the same clip.
-            </Text>
-          </View>
+      <Text style={styles.sectionTitle}>Current Metrics</Text>
+      <View style={styles.metricGrid}>
+        {metricTiles.map(item => (
+          <MetricLinkTile
+            detail={item.detail}
+            key={item.id}
+            label={item.label}
+            onPress={() => onOpenMetricHistory(item.id)}
+            value={item.value}
+          />
+        ))}
+      </View>
 
-          <View style={styles.metricGrid}>
-            {metricTiles.map(item => (
-              <MetricTile detail={item.detail} key={item.label} label={item.label} value={item.value} />
-            ))}
-          </View>
-
-          <View style={styles.assessmentGrid}>
-            {assessmentHighlights.map(item => (
-              <AssessmentTile item={item} key={item.id} />
-            ))}
-          </View>
-
-          <View style={styles.coachCard}>
-            <Text style={styles.coachTitle}>Coaching Readout</Text>
-            {(analysisResult.advice || []).map(item => (
-              <AdviceRow item={item} key={item.title} />
-            ))}
-          </View>
-        </>
-      ) : null}
+      <Text style={styles.sectionTitle}>Coaching Advice</Text>
+      <View style={styles.metricGrid}>
+        {adviceTiles.map((item, index) => (
+          <AdviceTile item={item} key={`${item.title}-${index}`} />
+        ))}
+      </View>
     </ScrollView>
   );
 }
@@ -437,142 +344,117 @@ const styles = StyleSheet.create({
     paddingTop: spacing.xl,
     paddingBottom: spacing.xxl,
   },
-  heroCard: {
+  stageCard: {
     borderRadius: radii.lg,
     borderWidth: 1,
     borderColor: colors.stroke,
-    backgroundColor: colors.surfaceStrong,
+    backgroundColor: colors.surface,
     padding: spacing.lg,
     marginBottom: spacing.lg,
     ...neonShadow,
   },
-  heroEyebrow: {
-    color: colors.accent,
-    fontSize: 12,
-    textTransform: 'uppercase',
-    letterSpacing: 1.5,
-    marginBottom: 6,
+  stageHeader: {
+    marginBottom: spacing.md,
   },
-  heroTitle: {
+  stageTitle: {
     color: colors.text,
     fontFamily: 'Bangers',
-    fontSize: 34,
+    fontSize: 36,
     letterSpacing: 0.8,
-    marginBottom: spacing.sm,
+    marginBottom: 4,
   },
-  heroCopy: {
+  stageMeta: {
     color: colors.textMuted,
-    fontSize: 14,
-    lineHeight: 22,
-  },
-  actionRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: spacing.lg,
-  },
-  actionButtonWrap: {
-    width: '48%',
-  },
-  videoShell: {
-    borderRadius: radii.lg,
-    borderWidth: 1,
-    borderColor: colors.stroke,
-    backgroundColor: 'rgba(17, 11, 28, 0.94)',
-    padding: spacing.md,
-    marginBottom: spacing.lg,
-  },
-  sectionLabel: {
-    color: colors.primarySoft,
     fontSize: 13,
-    textTransform: 'uppercase',
-    letterSpacing: 1.2,
-    marginBottom: spacing.sm,
+    lineHeight: 19,
   },
   videoFrame: {
-    height: 280,
+    height: 300,
     borderRadius: radii.md,
     overflow: 'hidden',
-    backgroundColor: '#030107',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 110, 209, 0.24)',
+    backgroundColor: '#050109',
     marginBottom: spacing.md,
   },
   video: {
-    width: '100%',
-    height: '100%',
+    flex: 1,
+    backgroundColor: '#050109',
   },
   overlayLayer: {
     ...StyleSheet.absoluteFillObject,
   },
   swingLane: {
     position: 'absolute',
-    top: '14%',
-    bottom: '12%',
-    left: '43%',
-    width: '18%',
-    borderRadius: radii.md,
+    left: '18%',
+    right: '15%',
+    top: '22%',
+    bottom: '10%',
+    borderRadius: 28,
     borderWidth: 1,
-    borderColor: 'rgba(255, 110, 209, 0.24)',
-    backgroundColor: 'rgba(255, 63, 164, 0.06)',
+    borderColor: 'rgba(255, 110, 209, 0.14)',
   },
   contactGate: {
     position: 'absolute',
     top: '32%',
-    left: '54%',
-    width: '18%',
-    height: '10%',
-    borderRadius: radii.round,
+    right: '18%',
+    width: 68,
+    height: 120,
+    borderRadius: 26,
     borderWidth: 1,
-    borderColor: 'rgba(126, 249, 255, 0.42)',
-    backgroundColor: 'rgba(126, 249, 255, 0.08)',
+    borderColor: 'rgba(126, 249, 255, 0.2)',
   },
   trailDot: {
     position: 'absolute',
-    width: 20,
-    height: 20,
-    borderRadius: radii.round,
+    width: 18,
+    height: 18,
+    marginLeft: -9,
+    marginTop: -9,
+    borderRadius: 999,
   },
   pinkDot: {
-    backgroundColor: 'rgba(255, 63, 164, 0.8)',
-    shadowColor: colors.primaryBright,
+    backgroundColor: colors.primary,
+    shadowColor: colors.primary,
     shadowOpacity: 0.9,
-    shadowRadius: 16,
+    shadowRadius: 14,
     shadowOffset: {width: 0, height: 0},
+    elevation: 10,
   },
   cyanDot: {
-    backgroundColor: 'rgba(126, 249, 255, 0.92)',
+    backgroundColor: colors.accent,
     shadowColor: colors.accent,
-    shadowOpacity: 0.9,
-    shadowRadius: 16,
+    shadowOpacity: 0.8,
+    shadowRadius: 12,
     shadowOffset: {width: 0, height: 0},
+    elevation: 9,
   },
   hitchFlag: {
     position: 'absolute',
-    marginLeft: -18,
-    marginTop: -26,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
     borderRadius: radii.round,
     borderWidth: 1,
-    borderColor: 'rgba(255, 156, 156, 0.48)',
-    backgroundColor: 'rgba(255, 95, 95, 0.2)',
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 6,
+    borderColor: 'rgba(255, 199, 102, 0.4)',
+    backgroundColor: 'rgba(41, 19, 8, 0.92)',
   },
   hitchFlagLabel: {
-    color: '#FF9C9C',
-    fontSize: 11,
+    color: '#FFC766',
+    fontSize: 10,
     fontWeight: '700',
     letterSpacing: 1,
   },
   emptyFrame: {
     flex: 1,
-    alignItems: 'center',
     justifyContent: 'center',
+    alignItems: 'center',
     paddingHorizontal: spacing.lg,
   },
   emptyTitle: {
     color: colors.text,
     fontFamily: 'Bangers',
-    fontSize: 30,
-    letterSpacing: 0.8,
-    marginBottom: spacing.sm,
+    fontSize: 28,
+    letterSpacing: 0.6,
+    marginBottom: spacing.xs,
   },
   emptyCopy: {
     color: colors.textMuted,
@@ -580,151 +462,75 @@ const styles = StyleSheet.create({
     lineHeight: 21,
     textAlign: 'center',
   },
-  clipMetaGrid: {
+  actionRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-  },
-  clipMetaCard: {
-    width: '48%',
-    borderRadius: radii.md,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 110, 209, 0.2)',
-    backgroundColor: 'rgba(12, 5, 20, 0.82)',
-    padding: spacing.md,
-  },
-  clipMetaLabel: {
-    color: colors.textDim,
-    fontSize: 11,
-    textTransform: 'uppercase',
-    letterSpacing: 1.1,
-    marginBottom: 6,
-  },
-  clipMetaValue: {
-    color: colors.text,
-    fontSize: 14,
-    fontWeight: '700',
-  },
-  analysisActionCard: {
-    borderRadius: radii.lg,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 110, 209, 0.35)',
-    backgroundColor: 'rgba(33, 8, 41, 0.96)',
-    padding: spacing.lg,
-    marginBottom: spacing.lg,
-    ...neonShadow,
-  },
-  analysisActionTitle: {
-    color: colors.text,
-    fontFamily: 'Bangers',
-    fontSize: 30,
-    letterSpacing: 0.7,
-    marginBottom: spacing.xs,
-  },
-  analysisActionCopy: {
-    color: colors.textMuted,
-    fontSize: 14,
-    lineHeight: 21,
     marginBottom: spacing.md,
   },
-  statusCard: {
-    borderRadius: radii.lg,
-    borderWidth: 1,
-    borderColor: 'rgba(126, 249, 255, 0.2)',
-    backgroundColor: 'rgba(12, 9, 23, 0.94)',
-    padding: spacing.lg,
-    marginBottom: spacing.lg,
+  actionButtonWrap: {
+    width: '31.5%',
   },
-  statusTitle: {
-    color: colors.text,
-    fontSize: 16,
-    fontWeight: '700',
-    lineHeight: 22,
-    marginBottom: spacing.xs,
+  statusStrip: {
+    marginBottom: spacing.sm,
+  },
+  statusLabel: {
+    color: colors.accent,
+    fontSize: 12,
+    textTransform: 'uppercase',
+    letterSpacing: 1.2,
+    marginBottom: 4,
   },
   statusCopy: {
     color: colors.textMuted,
-    fontSize: 14,
-    lineHeight: 21,
-  },
-  statusMeta: {
-    color: colors.primarySoft,
     fontSize: 13,
-    fontWeight: '700',
-    marginTop: spacing.sm,
+    lineHeight: 20,
   },
-  machineCardShell: {
-    borderRadius: radii.lg,
-    borderWidth: 1,
-    borderColor: colors.stroke,
-    backgroundColor: colors.surface,
-    padding: spacing.lg,
-    marginBottom: spacing.lg,
-  },
-  machineGrid: {
+  settingGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'space-between',
   },
-  machineReadCard: {
+  settingTile: {
     width: '48%',
     borderRadius: radii.md,
     borderWidth: 1,
-    borderColor: colors.stroke,
-    backgroundColor: 'rgba(24, 10, 34, 0.9)',
+    borderColor: 'rgba(126, 249, 255, 0.18)',
+    backgroundColor: 'rgba(14, 7, 23, 0.78)',
     padding: spacing.md,
     marginBottom: spacing.md,
   },
-  machineReadLabel: {
-    color: colors.textMuted,
-    fontSize: 12,
+  settingTilePressed: {
+    transform: [{scale: 0.99}],
+    borderColor: 'rgba(255, 110, 209, 0.38)',
+  },
+  settingTileDisabled: {
+    opacity: 0.65,
+  },
+  settingLabel: {
+    color: colors.textDim,
+    fontSize: 11,
     textTransform: 'uppercase',
     letterSpacing: 1.1,
     marginBottom: 4,
   },
-  machineReadValue: {
+  settingValue: {
     color: colors.text,
     fontFamily: 'Bangers',
     fontSize: 24,
     letterSpacing: 0.6,
     marginBottom: 4,
   },
-  machineReadDetail: {
-    color: colors.textDim,
-    fontSize: 13,
-    lineHeight: 20,
-  },
-  machineFootnote: {
-    color: colors.accent,
+  settingDetail: {
+    color: colors.textMuted,
     fontSize: 12,
     lineHeight: 18,
   },
-  resultsCard: {
-    borderRadius: radii.lg,
-    borderWidth: 1,
-    borderColor: colors.stroke,
-    backgroundColor: 'rgba(17, 11, 28, 0.94)',
-    padding: spacing.lg,
-    marginBottom: spacing.lg,
-    ...neonShadow,
-  },
-  cardEyebrow: {
-    color: colors.accent,
-    fontSize: 12,
-    textTransform: 'uppercase',
-    letterSpacing: 1.5,
-    marginBottom: 6,
-  },
-  resultsTitle: {
+  sectionTitle: {
     color: colors.text,
     fontFamily: 'Bangers',
     fontSize: 28,
-    letterSpacing: 0.6,
-    marginBottom: spacing.xs,
-  },
-  resultsCopy: {
-    color: colors.textMuted,
-    fontSize: 14,
-    lineHeight: 21,
+    letterSpacing: 0.7,
+    marginBottom: spacing.sm,
   },
   metricGrid: {
     flexDirection: 'row',
@@ -737,105 +543,69 @@ const styles = StyleSheet.create({
     borderRadius: radii.md,
     borderWidth: 1,
     borderColor: colors.stroke,
-    backgroundColor: 'rgba(27, 7, 36, 0.92)',
+    backgroundColor: 'rgba(24, 10, 34, 0.92)',
     padding: spacing.md,
     marginBottom: spacing.md,
+    ...neonShadow,
+  },
+  metricTilePressed: {
+    transform: [{scale: 0.99}],
+    borderColor: 'rgba(255, 110, 209, 0.38)',
+  },
+  metricLabel: {
+    color: colors.textDim,
+    fontSize: 11,
+    textTransform: 'uppercase',
+    letterSpacing: 1.1,
+    marginBottom: 6,
   },
   metricValue: {
     color: colors.primarySoft,
     fontFamily: 'Bangers',
-    fontSize: 30,
-    letterSpacing: 0.8,
-    marginBottom: 4,
-  },
-  metricLabel: {
-    color: colors.text,
-    fontSize: 15,
-    fontWeight: '700',
-    marginBottom: spacing.xs,
+    fontSize: 28,
+    letterSpacing: 0.7,
+    marginBottom: 6,
   },
   metricDetail: {
-    color: colors.textDim,
-    fontSize: 13,
-    lineHeight: 20,
-  },
-  assessmentGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
-    marginBottom: spacing.lg,
-  },
-  assessmentTile: {
-    width: '48%',
-    borderRadius: radii.md,
-    borderWidth: 1,
-    borderColor: 'rgba(126, 249, 255, 0.18)',
-    backgroundColor: 'rgba(12, 5, 20, 0.88)',
-    padding: spacing.md,
-    marginBottom: spacing.md,
-  },
-  assessmentTileLabel: {
     color: colors.textMuted,
     fontSize: 12,
-    textTransform: 'uppercase',
-    letterSpacing: 1.1,
-    marginBottom: 4,
+    lineHeight: 18,
+    marginBottom: spacing.sm,
   },
-  assessmentTileValue: {
-    color: colors.text,
-    fontFamily: 'Bangers',
-    fontSize: 24,
-    letterSpacing: 0.6,
-    marginBottom: 4,
-  },
-  assessmentTileStatus: {
+  metricLink: {
     color: colors.accent,
     fontSize: 12,
     fontWeight: '700',
     textTransform: 'uppercase',
-    letterSpacing: 1,
+    letterSpacing: 1.1,
   },
-  coachCard: {
-    borderRadius: radii.lg,
+  adviceTile: {
+    width: '48%',
+    borderRadius: radii.md,
     borderWidth: 1,
     borderColor: 'rgba(126, 249, 255, 0.18)',
-    backgroundColor: 'rgba(17, 11, 28, 0.92)',
-    padding: spacing.lg,
-  },
-  coachTitle: {
-    color: colors.text,
-    fontFamily: 'Bangers',
-    fontSize: 30,
-    letterSpacing: 0.7,
-    marginBottom: spacing.sm,
-  },
-  adviceRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
+    backgroundColor: 'rgba(14, 7, 23, 0.84)',
+    padding: spacing.md,
     marginBottom: spacing.md,
   },
-  adviceDot: {
-    width: 10,
-    height: 10,
-    borderRadius: radii.round,
-    backgroundColor: colors.primaryBright,
-    marginRight: spacing.sm,
-    marginTop: 6,
-  },
-  adviceTextWrap: {
-    flex: 1,
+  adviceLabel: {
+    color: colors.accent,
+    fontSize: 11,
+    textTransform: 'uppercase',
+    letterSpacing: 1.1,
+    marginBottom: 6,
   },
   adviceTitle: {
     color: colors.text,
-    fontSize: 15,
-    fontWeight: '700',
-    marginBottom: 4,
+    fontFamily: 'Bangers',
+    fontSize: 24,
+    letterSpacing: 0.6,
+    marginBottom: 6,
   },
   adviceBody: {
     color: colors.textMuted,
-    fontSize: 14,
-    lineHeight: 21,
+    fontSize: 13,
+    lineHeight: 19,
   },
 });
-
 
