@@ -1,8 +1,8 @@
-import { StyleSheet, Text, View } from "react-native";
+import {StyleSheet, Text, View} from 'react-native';
 
-import { colors, neonShadow, radii, spacing } from "../theme/theme";
+import {blockCard, blockEyebrow, blockTitle, colors, radii, spacing} from '../theme/theme';
 
-export function FeatureCard({ eyebrow, title, description, bullets }) {
+export function FeatureCard({eyebrow, title, description, bullets}) {
   return (
     <View style={styles.card}>
       <Text style={styles.eyebrow}>{eyebrow}</Text>
@@ -10,7 +10,7 @@ export function FeatureCard({ eyebrow, title, description, bullets }) {
       <Text style={styles.description}>{description}</Text>
 
       <View style={styles.bulletList}>
-        {bullets.map((bullet) => (
+        {bullets.map(bullet => (
           <View key={bullet} style={styles.bulletRow}>
             <View style={styles.bulletDot} />
             <Text style={styles.bulletLabel}>{bullet}</Text>
@@ -23,32 +23,17 @@ export function FeatureCard({ eyebrow, title, description, bullets }) {
 
 const styles = StyleSheet.create({
   card: {
-    borderRadius: radii.lg,
-    borderWidth: 1,
-    borderColor: colors.stroke,
-    backgroundColor: colors.surface,
+    ...blockCard,
     padding: spacing.lg,
     gap: spacing.sm,
-    ...neonShadow,
   },
   eyebrow: {
-    color: colors.accent,
-    fontSize: 12,
-    letterSpacing: 1.6,
-    textTransform: "uppercase",
+    ...blockEyebrow,
   },
   title: {
-    color: colors.text,
-    fontSize: 28,
-    lineHeight: 30,
-    fontFamily: "Bangers",
-    letterSpacing: 0.8,
-    textShadowColor: "rgba(255, 110, 209, 0.9)",
-    textShadowOffset: {
-      width: 0,
-      height: 0,
-    },
-    textShadowRadius: 14,
+    ...blockTitle,
+    fontSize: 24,
+    lineHeight: 28,
   },
   description: {
     color: colors.textMuted,
@@ -60,13 +45,13 @@ const styles = StyleSheet.create({
     marginTop: spacing.xs,
   },
   bulletRow: {
-    flexDirection: "row",
-    alignItems: "center",
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   bulletDot: {
     width: 8,
     height: 8,
-    borderRadius: radii.round,
+    borderRadius: 3,
     backgroundColor: colors.primaryBright,
     marginRight: spacing.sm,
     shadowColor: colors.primaryBright,

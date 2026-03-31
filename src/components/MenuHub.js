@@ -1,16 +1,19 @@
-﻿import {useState} from 'react';
-import {
-  Modal,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
+import {useState} from 'react';
+import {Modal, Pressable, ScrollView, StyleSheet, Text, View} from 'react-native';
 
 import {PageHeader} from './PageHeader';
 import {NeonButton} from './NeonButton';
-import {colors, neonShadow, radii, spacing} from '../theme/theme';
+import {
+  blockCard,
+  blockEyebrow,
+  blockGlow,
+  blockPanel,
+  blockTitle,
+  blockTitleLarge,
+  colors,
+  radii,
+  spacing,
+} from '../theme/theme';
 
 export function MenuHub({items, onOpenScreen, onGoHome, introTitle, introCopy}) {
   const [selectedItem, setSelectedItem] = useState(null);
@@ -30,7 +33,7 @@ export function MenuHub({items, onOpenScreen, onGoHome, introTitle, introCopy}) 
   };
 
   return (
-    <ScrollView style={styles.safeArea} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+    <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false} style={styles.safeArea}>
       <PageHeader onHomePress={onGoHome} />
 
       {introTitle || introCopy ? (
@@ -94,19 +97,12 @@ const styles = StyleSheet.create({
     paddingBottom: spacing.xxl,
   },
   introCard: {
-    borderRadius: radii.lg,
-    borderWidth: 1,
-    borderColor: colors.stroke,
-    backgroundColor: colors.surface,
+    ...blockCard,
     padding: spacing.lg,
     marginBottom: spacing.lg,
-    ...neonShadow,
   },
   introTitle: {
-    color: colors.text,
-    fontFamily: 'Bangers',
-    fontSize: 32,
-    letterSpacing: 0.8,
+    ...blockTitleLarge,
     marginBottom: spacing.xs,
   },
   introCopy: {
@@ -118,28 +114,19 @@ const styles = StyleSheet.create({
     gap: spacing.md,
   },
   menuCard: {
-    borderRadius: radii.md,
-    borderWidth: 1,
-    borderColor: colors.stroke,
-    backgroundColor: 'rgba(24, 10, 34, 0.9)',
+    ...blockCard,
     padding: spacing.lg,
-    ...neonShadow,
   },
   menuCardPressed: {
-    transform: [{scale: 0.98}],
+    transform: [{scale: 0.985}],
+    borderColor: 'rgba(255, 110, 209, 0.62)',
   },
   menuEyebrow: {
-    color: colors.accent,
-    fontSize: 11,
-    textTransform: 'uppercase',
-    letterSpacing: 1.5,
+    ...blockEyebrow,
     marginBottom: 6,
   },
   menuTitle: {
-    color: colors.text,
-    fontFamily: 'Bangers',
-    fontSize: 28,
-    letterSpacing: 0.7,
+    ...blockTitle,
     marginBottom: spacing.xs,
   },
   menuPreview: {
@@ -149,30 +136,21 @@ const styles = StyleSheet.create({
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(5, 1, 10, 0.76)',
+    backgroundColor: 'rgba(5, 1, 10, 0.78)',
     justifyContent: 'center',
     paddingHorizontal: spacing.lg,
   },
   modalCard: {
-    borderRadius: radii.lg,
-    borderWidth: 1,
-    borderColor: colors.stroke,
-    backgroundColor: 'rgba(19, 8, 31, 0.98)',
+    ...blockCard,
     padding: spacing.lg,
-    ...neonShadow,
+    shadowOpacity: blockGlow.shadowOpacity,
   },
   modalEyebrow: {
-    color: colors.accent,
-    fontSize: 12,
-    textTransform: 'uppercase',
-    letterSpacing: 1.5,
+    ...blockEyebrow,
     marginBottom: 6,
   },
   modalTitle: {
-    color: colors.text,
-    fontFamily: 'Bangers',
-    fontSize: 36,
-    letterSpacing: 0.8,
+    ...blockTitleLarge,
     marginBottom: spacing.sm,
   },
   modalDescription: {
@@ -186,15 +164,22 @@ const styles = StyleSheet.create({
     marginBottom: spacing.lg,
   },
   modalBulletRow: {
+    ...blockPanel,
     flexDirection: 'row',
     alignItems: 'center',
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
   },
   modalBulletDot: {
-    width: 8,
-    height: 8,
-    borderRadius: radii.round,
+    width: 9,
+    height: 9,
+    borderRadius: 3,
     backgroundColor: colors.primaryBright,
     marginRight: spacing.sm,
+    shadowColor: colors.primaryBright,
+    shadowOpacity: 0.85,
+    shadowRadius: 8,
+    shadowOffset: {width: 0, height: 0},
   },
   modalBulletLabel: {
     color: colors.text,

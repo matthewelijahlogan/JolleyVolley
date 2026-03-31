@@ -2,14 +2,23 @@ import {ScrollView, StyleSheet, Text, View} from 'react-native';
 
 import {NeonButton} from '../components/NeonButton';
 import {PageHeader} from '../components/PageHeader';
-import {colors, neonShadow, radii, spacing} from '../theme/theme';
+import {
+  blockCard,
+  blockEyebrow,
+  blockPanel,
+  blockPanelAlt,
+  blockTitle,
+  blockTitleLarge,
+  colors,
+  spacing,
+} from '../theme/theme';
 
 export function FeedbackScreen({analysisResult, onGoHome, onOpenScreen, selectedVideo, trackingStatus}) {
   const usingTrackedSession = analysisResult?.trackingApplied;
   const usingDirectBallTrack = analysisResult?.ballTrackingApplied;
 
   return (
-    <ScrollView style={styles.safeArea} contentContainerStyle={styles.content}>
+    <ScrollView contentContainerStyle={styles.content} style={styles.safeArea}>
       <PageHeader onHomePress={onGoHome} />
 
       <View style={styles.card}>
@@ -51,7 +60,7 @@ export function FeedbackScreen({analysisResult, onGoHome, onOpenScreen, selected
         </>
       ) : (
         <View style={styles.emptyCard}>
-          <Text style={styles.emptyTitle}>No feedback yet</Text>
+          <Text style={styles.emptyTitle}>No Feedback Yet</Text>
           <Text style={styles.emptyBody}>Run the session analysis in the recorder to generate correction cues here.</Text>
         </View>
       )}
@@ -76,26 +85,16 @@ const styles = StyleSheet.create({
     paddingBottom: spacing.xxl,
   },
   card: {
-    borderRadius: radii.lg,
-    borderWidth: 1,
-    borderColor: colors.stroke,
-    backgroundColor: colors.surface,
+    ...blockCard,
     padding: spacing.lg,
     marginBottom: spacing.lg,
-    ...neonShadow,
   },
   cardEyebrow: {
-    color: colors.accent,
-    fontSize: 12,
-    textTransform: 'uppercase',
-    letterSpacing: 1.5,
+    ...blockEyebrow,
     marginBottom: 6,
   },
   cardTitle: {
-    color: colors.text,
-    fontFamily: 'Bangers',
-    fontSize: 34,
-    letterSpacing: 0.8,
+    ...blockTitleLarge,
     marginBottom: spacing.sm,
   },
   cardCopy: {
@@ -104,17 +103,13 @@ const styles = StyleSheet.create({
     lineHeight: 22,
   },
   sourceCard: {
-    borderRadius: radii.md,
-    borderWidth: 1,
-    borderColor: 'rgba(126, 249, 255, 0.18)',
-    backgroundColor: 'rgba(17, 11, 28, 0.88)',
+    ...blockPanelAlt,
     padding: spacing.md,
     marginBottom: spacing.md,
   },
   sourceTitle: {
-    color: colors.primarySoft,
-    fontSize: 15,
-    fontWeight: '700',
+    ...blockTitle,
+    fontSize: 22,
     marginBottom: spacing.xs,
   },
   sourceCopy: {
@@ -129,18 +124,13 @@ const styles = StyleSheet.create({
     lineHeight: 18,
   },
   adviceCard: {
-    borderRadius: radii.md,
-    borderWidth: 1,
-    borderColor: colors.stroke,
-    backgroundColor: 'rgba(27, 7, 36, 0.92)',
+    ...blockPanel,
     padding: spacing.lg,
     marginBottom: spacing.md,
   },
   adviceTitle: {
-    color: colors.text,
-    fontFamily: 'Bangers',
-    fontSize: 28,
-    letterSpacing: 0.7,
+    ...blockTitle,
+    fontSize: 22,
     marginBottom: spacing.xs,
   },
   adviceBody: {
@@ -149,18 +139,13 @@ const styles = StyleSheet.create({
     lineHeight: 22,
   },
   emptyCard: {
-    borderRadius: radii.md,
-    borderWidth: 1,
-    borderColor: colors.stroke,
-    backgroundColor: 'rgba(17, 11, 28, 0.9)',
+    ...blockCard,
     padding: spacing.lg,
     marginBottom: spacing.lg,
   },
   emptyTitle: {
-    color: colors.text,
-    fontFamily: 'Bangers',
-    fontSize: 28,
-    letterSpacing: 0.8,
+    ...blockTitle,
+    fontSize: 22,
     marginBottom: spacing.xs,
   },
   emptyBody: {

@@ -1,6 +1,6 @@
 import {Pressable, StyleSheet, Text} from 'react-native';
 
-import {colors, neonShadow, radii, spacing} from '../theme/theme';
+import {blockGlow, colors, radii, spacing} from '../theme/theme';
 
 export function NeonButton({label, onPress, tone = 'primary'}) {
   const filled = tone === 'primary';
@@ -23,33 +23,36 @@ export function NeonButton({label, onPress, tone = 'primary'}) {
 const styles = StyleSheet.create({
   button: {
     minHeight: 48,
-    borderRadius: radii.round,
+    borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.sm,
-    borderWidth: 1,
+    borderWidth: 2,
   },
   buttonPrimary: {
-    backgroundColor: 'rgba(255, 63, 164, 0.18)',
-    borderColor: 'rgba(255, 110, 209, 0.4)',
-    ...neonShadow,
+    backgroundColor: 'rgba(255, 63, 164, 0.2)',
+    borderColor: 'rgba(255, 110, 209, 0.54)',
+    ...blockGlow,
   },
   buttonSecondary: {
-    backgroundColor: 'rgba(17, 11, 28, 0.9)',
-    borderColor: 'rgba(126, 249, 255, 0.2)',
+    backgroundColor: 'rgba(12, 8, 18, 0.96)',
+    borderColor: 'rgba(126, 249, 255, 0.24)',
   },
   buttonPressed: {
     transform: [{scale: 0.98}],
   },
   label: {
-    fontSize: 13,
-    letterSpacing: 0.8,
+    fontSize: 12,
+    letterSpacing: 1.1,
     textTransform: 'uppercase',
-    fontWeight: '700',
+    fontWeight: '900',
   },
   labelPrimary: {
     color: colors.text,
+    textShadowColor: 'rgba(255, 110, 209, 0.82)',
+    textShadowOffset: {width: 0, height: 0},
+    textShadowRadius: 8,
   },
   labelSecondary: {
     color: colors.accent,

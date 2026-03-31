@@ -2,14 +2,22 @@ import {ScrollView, StyleSheet, Text, View} from 'react-native';
 
 import {NeonButton} from '../components/NeonButton';
 import {PageHeader} from '../components/PageHeader';
-import {colors, neonShadow, radii, spacing} from '../theme/theme';
+import {
+  blockCard,
+  blockEyebrow,
+  blockPanel,
+  blockTitle,
+  blockTitleLarge,
+  colors,
+  spacing,
+} from '../theme/theme';
 
 export function AboutScreen({onGoHome, onOpenScreen}) {
   return (
-    <ScrollView style={styles.safeArea} contentContainerStyle={styles.content}>
+    <ScrollView contentContainerStyle={styles.content} style={styles.safeArea}>
       <PageHeader onHomePress={onGoHome} />
 
-      <View style={styles.card}>
+      <View style={styles.heroCard}>
         <Text style={styles.cardEyebrow}>About</Text>
         <Text style={styles.cardTitle}>Jolley Volley</Text>
         <Text style={styles.cardCopy}>
@@ -19,12 +27,12 @@ export function AboutScreen({onGoHome, onOpenScreen}) {
 
       <View style={styles.infoCard}>
         <Text style={styles.infoTitle}>What Works Now</Text>
-        <Text style={styles.infoCopy}>Record or import a clip, score the main jump and swing markers, review neon playback, read feedback cues, keep a scoreboard, and save sessions to athlete profiles.</Text>
+        <Text style={styles.infoCopy}>Record or import a clip, review machine-read motion cards, trace neon playback, read swing feedback, run the scoreboard, and save sessions to athlete profiles.</Text>
       </View>
 
       <View style={styles.infoCard}>
         <Text style={styles.infoTitle}>What Comes Next</Text>
-        <Text style={styles.infoCopy}>Motion Lab now fills the core swing, ball, timing, and jump fields from the video itself, and the next layer is improving how much of that read can be made even more precise from deeper on-device tracking.</Text>
+        <Text style={styles.infoCopy}>Motion Lab is already filling the core swing, jump, timing, and ball fields from the clip, and the next layer is continuing to tighten the precision of those on-device reads.</Text>
       </View>
 
       <View style={styles.infoCard}>
@@ -50,27 +58,17 @@ const styles = StyleSheet.create({
     paddingTop: spacing.xl,
     paddingBottom: spacing.xxl,
   },
-  card: {
-    borderRadius: radii.lg,
-    borderWidth: 1,
-    borderColor: colors.stroke,
-    backgroundColor: colors.surface,
+  heroCard: {
+    ...blockCard,
     padding: spacing.lg,
     marginBottom: spacing.lg,
-    ...neonShadow,
   },
   cardEyebrow: {
-    color: colors.accent,
-    fontSize: 12,
-    textTransform: 'uppercase',
-    letterSpacing: 1.5,
+    ...blockEyebrow,
     marginBottom: 6,
   },
   cardTitle: {
-    color: colors.text,
-    fontFamily: 'Bangers',
-    fontSize: 34,
-    letterSpacing: 0.8,
+    ...blockTitleLarge,
     marginBottom: spacing.sm,
   },
   cardCopy: {
@@ -79,18 +77,13 @@ const styles = StyleSheet.create({
     lineHeight: 22,
   },
   infoCard: {
-    borderRadius: radii.md,
-    borderWidth: 1,
-    borderColor: colors.stroke,
-    backgroundColor: 'rgba(17, 11, 28, 0.9)',
+    ...blockPanel,
     padding: spacing.md,
     marginBottom: spacing.md,
   },
   infoTitle: {
-    color: colors.text,
-    fontFamily: 'Bangers',
-    fontSize: 28,
-    letterSpacing: 0.7,
+    ...blockTitle,
+    fontSize: 22,
     marginBottom: spacing.xs,
   },
   infoCopy: {

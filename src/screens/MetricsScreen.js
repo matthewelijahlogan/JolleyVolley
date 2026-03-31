@@ -7,7 +7,16 @@ import {
   getMotionHistoryMetric,
   hasMotionHistoryValue,
 } from '../data/motionHistory';
-import {colors, neonShadow, radii, spacing} from '../theme/theme';
+import {
+  blockCard,
+  blockEyebrow,
+  blockPanel,
+  blockTitle,
+  blockTitleLarge,
+  blockValue,
+  colors,
+  spacing,
+} from '../theme/theme';
 
 function SummaryTile({label, value}) {
   return (
@@ -30,13 +39,7 @@ function HistoryCard({entry, metricId}) {
   );
 }
 
-export function MetricsScreen({
-  analysisResult,
-  historyMetricId,
-  motionHistory,
-  onGoHome,
-  onOpenScreen,
-}) {
+export function MetricsScreen({analysisResult, historyMetricId, motionHistory, onGoHome, onOpenScreen}) {
   const metric = getMotionHistoryMetric(historyMetricId);
   const entries = (motionHistory || []).filter(entry => hasMotionHistoryValue(metric.id, entry[metric.id]));
   const currentValue = hasMotionHistoryValue(metric.id, analysisResult?.[metric.id])
@@ -68,7 +71,7 @@ export function MetricsScreen({
         </View>
       ) : (
         <View style={styles.emptyCard}>
-          <Text style={styles.emptyTitle}>No history yet</Text>
+          <Text style={styles.emptyTitle}>No History Yet</Text>
           <Text style={styles.emptyBody}>{metric.emptyMessage}</Text>
         </View>
       )}
@@ -91,26 +94,16 @@ const styles = StyleSheet.create({
     paddingBottom: spacing.xxl,
   },
   heroCard: {
-    borderRadius: radii.lg,
-    borderWidth: 1,
-    borderColor: colors.stroke,
-    backgroundColor: colors.surface,
+    ...blockCard,
     padding: spacing.lg,
     marginBottom: spacing.lg,
-    ...neonShadow,
   },
   cardEyebrow: {
-    color: colors.accent,
-    fontSize: 12,
-    textTransform: 'uppercase',
-    letterSpacing: 1.5,
+    ...blockEyebrow,
     marginBottom: 6,
   },
   cardTitle: {
-    color: colors.text,
-    fontFamily: 'Bangers',
-    fontSize: 34,
-    letterSpacing: 0.8,
+    ...blockTitleLarge,
     marginBottom: spacing.sm,
   },
   cardCopy: {
@@ -124,25 +117,20 @@ const styles = StyleSheet.create({
     marginBottom: spacing.lg,
   },
   summaryTile: {
+    ...blockPanel,
     width: '48%',
-    borderRadius: radii.md,
-    borderWidth: 1,
-    borderColor: colors.stroke,
-    backgroundColor: 'rgba(24, 10, 34, 0.92)',
     padding: spacing.md,
   },
   summaryLabel: {
     color: colors.textDim,
     fontSize: 11,
+    fontWeight: '800',
     textTransform: 'uppercase',
     letterSpacing: 1.1,
     marginBottom: 6,
   },
   summaryValue: {
-    color: colors.primarySoft,
-    fontFamily: 'Bangers',
-    fontSize: 28,
-    letterSpacing: 0.7,
+    ...blockValue,
   },
   historyGrid: {
     flexDirection: 'row',
@@ -151,26 +139,18 @@ const styles = StyleSheet.create({
     marginBottom: spacing.lg,
   },
   historyCard: {
+    ...blockPanel,
     width: '48%',
-    borderRadius: radii.md,
-    borderWidth: 1,
-    borderColor: 'rgba(126, 249, 255, 0.18)',
-    backgroundColor: 'rgba(14, 7, 23, 0.84)',
     padding: spacing.md,
     marginBottom: spacing.md,
   },
   historyLabel: {
-    color: colors.accent,
-    fontSize: 11,
-    textTransform: 'uppercase',
-    letterSpacing: 1.1,
+    ...blockEyebrow,
     marginBottom: 6,
   },
   historyValue: {
-    color: colors.text,
-    fontFamily: 'Bangers',
-    fontSize: 26,
-    letterSpacing: 0.7,
+    ...blockValue,
+    fontSize: 24,
     marginBottom: 4,
   },
   historyMeta: {
@@ -189,18 +169,13 @@ const styles = StyleSheet.create({
     lineHeight: 18,
   },
   emptyCard: {
-    borderRadius: radii.md,
-    borderWidth: 1,
-    borderColor: 'rgba(126, 249, 255, 0.18)',
-    backgroundColor: 'rgba(14, 7, 23, 0.84)',
+    ...blockCard,
     padding: spacing.lg,
     marginBottom: spacing.lg,
   },
   emptyTitle: {
-    color: colors.text,
-    fontFamily: 'Bangers',
-    fontSize: 30,
-    letterSpacing: 0.7,
+    ...blockTitle,
+    fontSize: 22,
     marginBottom: spacing.xs,
   },
   emptyBody: {

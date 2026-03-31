@@ -1,6 +1,6 @@
 import {Pressable, StyleSheet, Text, View} from 'react-native';
 
-import {colors, radii, spacing} from '../theme/theme';
+import {blockPanel, blockValue, colors, spacing} from '../theme/theme';
 
 export function StatStepper({label, value, onIncrement, onDecrement}) {
   return (
@@ -21,26 +21,21 @@ export function StatStepper({label, value, onIncrement, onDecrement}) {
 
 const styles = StyleSheet.create({
   card: {
+    ...blockPanel,
     width: '48%',
-    borderRadius: radii.md,
-    borderWidth: 1,
-    borderColor: colors.stroke,
-    backgroundColor: 'rgba(27, 7, 36, 0.92)',
     padding: spacing.md,
     marginBottom: spacing.md,
   },
   label: {
     color: colors.textMuted,
     fontSize: 12,
+    fontWeight: '800',
     textTransform: 'uppercase',
     letterSpacing: 1.1,
     marginBottom: 6,
   },
   value: {
-    color: colors.text,
-    fontFamily: 'Bangers',
-    fontSize: 30,
-    letterSpacing: 0.8,
+    ...blockValue,
     marginBottom: spacing.sm,
   },
   row: {
@@ -49,10 +44,10 @@ const styles = StyleSheet.create({
   },
   control: {
     width: '46%',
-    borderRadius: radii.round,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 110, 209, 0.35)',
-    backgroundColor: 'rgba(255, 63, 164, 0.12)',
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: 'rgba(255, 110, 209, 0.4)',
+    backgroundColor: 'rgba(255, 63, 164, 0.16)',
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 10,
@@ -60,6 +55,6 @@ const styles = StyleSheet.create({
   controlLabel: {
     color: colors.text,
     fontSize: 20,
-    fontWeight: '700',
+    fontWeight: '900',
   },
 });

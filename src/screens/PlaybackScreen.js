@@ -3,7 +3,18 @@ import Video from 'react-native-video';
 
 import {NeonButton} from '../components/NeonButton';
 import {PageHeader} from '../components/PageHeader';
-import {colors, neonShadow, radii, spacing} from '../theme/theme';
+import {
+  blockCard,
+  blockEyebrow,
+  blockPanel,
+  blockPanelAlt,
+  blockTitle,
+  blockTitleLarge,
+  blockValue,
+  colors,
+  radii,
+  spacing,
+} from '../theme/theme';
 
 function TrailDot({style, glow = 'pink'}) {
   const accent = glow === 'cyan' ? styles.cyanDot : styles.pinkDot;
@@ -34,7 +45,7 @@ export function PlaybackScreen({analysisResult, onGoHome, onOpenScreen, selected
   const hitchPoint = analysisResult?.hitchFrames >= 3 ? handTrail[Math.min(1, handTrail.length - 1)] : null;
 
   return (
-    <ScrollView style={styles.safeArea} contentContainerStyle={styles.content}>
+    <ScrollView contentContainerStyle={styles.content} style={styles.safeArea}>
       <PageHeader onHomePress={onGoHome} />
 
       <View style={styles.card}>
@@ -44,7 +55,7 @@ export function PlaybackScreen({analysisResult, onGoHome, onOpenScreen, selected
           {analysisResult?.trackingApplied
             ? ballTrackingApplied
               ? 'This view is using the tracked hand path and the direct tracked ball trail pulled from the current clip.'
-              : 'This view is using the tracked hand path pulled from the current clip. The ball trail will stay simulated until the direct ball pass locks on.'
+              : 'This view is using the tracked hand path pulled from the current clip. The ball trail stays simulated until the direct ball pass locks on.'
             : 'This view is waiting on the machine-filled session read. Run Motion Lab analysis on a clip to replace the fallback hand path with the tracked sample.'}
         </Text>
       </View>
@@ -70,7 +81,7 @@ export function PlaybackScreen({analysisResult, onGoHome, onOpenScreen, selected
             </>
           ) : (
             <View style={styles.emptyFrame}>
-              <Text style={styles.emptyTitle}>No clip ready</Text>
+              <Text style={styles.emptyTitle}>No Clip Ready</Text>
               <Text style={styles.emptyCopy}>Load a video in the recorder first, then come back here for the swing tracker overlay.</Text>
             </View>
           )}
@@ -131,26 +142,16 @@ const styles = StyleSheet.create({
     paddingBottom: spacing.xxl,
   },
   card: {
-    borderRadius: radii.lg,
-    borderWidth: 1,
-    borderColor: colors.stroke,
-    backgroundColor: colors.surface,
+    ...blockCard,
     padding: spacing.lg,
     marginBottom: spacing.lg,
-    ...neonShadow,
   },
   cardEyebrow: {
-    color: colors.accent,
-    fontSize: 12,
-    textTransform: 'uppercase',
-    letterSpacing: 1.5,
+    ...blockEyebrow,
     marginBottom: 6,
   },
   cardTitle: {
-    color: colors.text,
-    fontFamily: 'Bangers',
-    fontSize: 34,
-    letterSpacing: 0.8,
+    ...blockTitleLarge,
     marginBottom: spacing.sm,
   },
   cardCopy: {
@@ -159,18 +160,17 @@ const styles = StyleSheet.create({
     lineHeight: 22,
   },
   playerCard: {
-    borderRadius: radii.lg,
-    borderWidth: 1,
-    borderColor: colors.stroke,
-    backgroundColor: 'rgba(17, 11, 28, 0.92)',
+    ...blockCard,
     padding: spacing.md,
     marginBottom: spacing.lg,
   },
   playerFrame: {
     height: 320,
-    borderRadius: radii.md,
+    borderRadius: 16,
     overflow: 'hidden',
     backgroundColor: '#030107',
+    borderWidth: 2,
+    borderColor: 'rgba(255, 110, 209, 0.28)',
   },
   video: {
     width: '100%',
@@ -185,10 +185,10 @@ const styles = StyleSheet.create({
     bottom: '12%',
     left: '43%',
     width: '18%',
-    borderRadius: radii.md,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 110, 209, 0.24)',
-    backgroundColor: 'rgba(255, 63, 164, 0.06)',
+    borderRadius: 16,
+    borderWidth: 2,
+    borderColor: 'rgba(255, 110, 209, 0.28)',
+    backgroundColor: 'rgba(255, 63, 164, 0.08)',
   },
   contactGate: {
     position: 'absolute',
@@ -196,8 +196,8 @@ const styles = StyleSheet.create({
     left: '54%',
     width: '18%',
     height: '10%',
-    borderRadius: radii.round,
-    borderWidth: 1,
+    borderRadius: 14,
+    borderWidth: 2,
     borderColor: 'rgba(126, 249, 255, 0.42)',
     backgroundColor: 'rgba(126, 249, 255, 0.08)',
   },
@@ -225,17 +225,17 @@ const styles = StyleSheet.create({
     position: 'absolute',
     marginLeft: -18,
     marginTop: -26,
-    borderRadius: radii.round,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 156, 156, 0.48)',
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: 'rgba(255, 156, 156, 0.54)',
     backgroundColor: 'rgba(255, 95, 95, 0.2)',
     paddingHorizontal: spacing.sm,
     paddingVertical: 6,
   },
   hitchFlagLabel: {
     color: '#FF9C9C',
-    fontSize: 11,
-    fontWeight: '700',
+    fontSize: 10,
+    fontWeight: '900',
     letterSpacing: 1,
   },
   emptyFrame: {
@@ -245,10 +245,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
   },
   emptyTitle: {
-    color: colors.text,
-    fontFamily: 'Bangers',
-    fontSize: 30,
-    letterSpacing: 0.8,
+    ...blockTitle,
+    fontSize: 22,
     marginBottom: spacing.sm,
   },
   emptyCopy: {
@@ -264,39 +262,31 @@ const styles = StyleSheet.create({
     marginBottom: spacing.lg,
   },
   statCard: {
+    ...blockPanel,
     width: '48%',
-    borderRadius: radii.md,
-    borderWidth: 1,
-    borderColor: colors.stroke,
-    backgroundColor: 'rgba(27, 7, 36, 0.92)',
     padding: spacing.md,
     marginBottom: spacing.md,
   },
   statLabel: {
     color: colors.textMuted,
     fontSize: 12,
+    fontWeight: '800',
     textTransform: 'uppercase',
     letterSpacing: 1.1,
     marginBottom: 6,
   },
   statValue: {
-    color: colors.text,
-    fontFamily: 'Bangers',
-    fontSize: 28,
-    letterSpacing: 0.7,
+    ...blockValue,
+    fontSize: 24,
   },
   infoCard: {
-    borderRadius: radii.md,
-    borderWidth: 1,
-    borderColor: 'rgba(126, 249, 255, 0.18)',
-    backgroundColor: 'rgba(17, 11, 28, 0.88)',
+    ...blockPanelAlt,
     padding: spacing.md,
     marginBottom: spacing.lg,
   },
   infoTitle: {
-    color: colors.primarySoft,
-    fontSize: 15,
-    fontWeight: '700',
+    ...blockTitle,
+    fontSize: 22,
     marginBottom: 6,
   },
   infoCopy: {

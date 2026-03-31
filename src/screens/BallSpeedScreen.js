@@ -2,14 +2,24 @@ import {ScrollView, StyleSheet, Text, View} from 'react-native';
 
 import {NeonButton} from '../components/NeonButton';
 import {PageHeader} from '../components/PageHeader';
-import {colors, neonShadow, radii, spacing} from '../theme/theme';
+import {
+  blockCard,
+  blockEyebrow,
+  blockPanel,
+  blockPanelAlt,
+  blockTitle,
+  blockTitleLarge,
+  blockValue,
+  colors,
+  spacing,
+} from '../theme/theme';
 
 function toNumber(value) {
   const parsed = parseFloat(value);
   return Number.isFinite(parsed) ? parsed : 0;
 }
 
-function MetricTile({label, value, detail}) {
+function MetricTile({detail, label, value}) {
   return (
     <View style={styles.metricTile}>
       <Text style={styles.metricValue}>{value}</Text>
@@ -42,14 +52,14 @@ export function BallSpeedScreen({
   const handTrackingQuality = Number(analysisResult?.trackingQuality || trackingResult?.trackingQuality || 0);
 
   return (
-    <ScrollView style={styles.safeArea} contentContainerStyle={styles.content}>
+    <ScrollView contentContainerStyle={styles.content} style={styles.safeArea}>
       <PageHeader onHomePress={onGoHome} />
 
       <View style={styles.card}>
         <Text style={styles.cardEyebrow}>MPH Tool</Text>
         <Text style={styles.cardTitle}>Ball Speed</Text>
         <Text style={styles.cardCopy}>
-          This tool stays tied to the active Motion Lab clip. It now prefers the direct tracked ball trail, falls back to the tracked hand estimate when needed, and only uses the derived clip-timing sample when tracking is missing.
+          This tool stays tied to the active Motion Lab clip. It prefers the direct tracked ball trail, falls back to the tracked hand estimate when needed, and only uses the derived clip-timing sample when tracking is missing.
         </Text>
       </View>
 
@@ -94,7 +104,7 @@ export function BallSpeedScreen({
         </>
       ) : (
         <View style={styles.emptyCard}>
-          <Text style={styles.emptyTitle}>No speed sample yet</Text>
+          <Text style={styles.emptyTitle}>No Speed Sample Yet</Text>
           <Text style={styles.emptyBody}>Open the recorder, load a clip, and run the current analysis to populate this tool.</Text>
         </View>
       )}
@@ -119,26 +129,16 @@ const styles = StyleSheet.create({
     paddingBottom: spacing.xxl,
   },
   card: {
-    borderRadius: radii.lg,
-    borderWidth: 1,
-    borderColor: colors.stroke,
-    backgroundColor: colors.surface,
+    ...blockCard,
     padding: spacing.lg,
     marginBottom: spacing.lg,
-    ...neonShadow,
   },
   cardEyebrow: {
-    color: colors.accent,
-    fontSize: 12,
-    textTransform: 'uppercase',
-    letterSpacing: 1.5,
+    ...blockEyebrow,
     marginBottom: 6,
   },
   cardTitle: {
-    color: colors.text,
-    fontFamily: 'Bangers',
-    fontSize: 34,
-    letterSpacing: 0.8,
+    ...blockTitleLarge,
     marginBottom: spacing.sm,
   },
   cardCopy: {
@@ -153,25 +153,19 @@ const styles = StyleSheet.create({
     marginBottom: spacing.lg,
   },
   metricTile: {
+    ...blockPanel,
     width: '48%',
-    borderRadius: radii.md,
-    borderWidth: 1,
-    borderColor: colors.stroke,
-    backgroundColor: 'rgba(27, 7, 36, 0.92)',
     padding: spacing.md,
     marginBottom: spacing.md,
   },
   metricValue: {
-    color: colors.primarySoft,
-    fontFamily: 'Bangers',
-    fontSize: 30,
-    letterSpacing: 0.8,
+    ...blockValue,
     marginBottom: 4,
   },
   metricLabel: {
     color: colors.text,
     fontSize: 15,
-    fontWeight: '700',
+    fontWeight: '800',
     marginBottom: spacing.xs,
   },
   metricDetail: {
@@ -180,17 +174,13 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   infoCard: {
-    borderRadius: radii.md,
-    borderWidth: 1,
-    borderColor: 'rgba(126, 249, 255, 0.18)',
-    backgroundColor: 'rgba(17, 11, 28, 0.88)',
+    ...blockPanelAlt,
     padding: spacing.md,
     marginBottom: spacing.lg,
   },
   infoTitle: {
-    color: colors.primarySoft,
-    fontSize: 15,
-    fontWeight: '700',
+    ...blockTitle,
+    fontSize: 22,
     marginBottom: spacing.sm,
   },
   infoCopy: {
@@ -205,18 +195,13 @@ const styles = StyleSheet.create({
     lineHeight: 18,
   },
   emptyCard: {
-    borderRadius: radii.md,
-    borderWidth: 1,
-    borderColor: colors.stroke,
-    backgroundColor: 'rgba(17, 11, 28, 0.9)',
+    ...blockCard,
     padding: spacing.lg,
     marginBottom: spacing.lg,
   },
   emptyTitle: {
-    color: colors.text,
-    fontFamily: 'Bangers',
-    fontSize: 28,
-    letterSpacing: 0.8,
+    ...blockTitle,
+    fontSize: 22,
     marginBottom: spacing.xs,
   },
   emptyBody: {

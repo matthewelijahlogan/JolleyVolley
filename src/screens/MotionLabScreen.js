@@ -5,7 +5,18 @@ import Video from 'react-native-video';
 import {NeonButton} from '../components/NeonButton';
 import {PageHeader} from '../components/PageHeader';
 import {formatMotionHistoryValue, motionHistoryMetrics} from '../data/motionHistory';
-import {colors, neonShadow, radii, spacing} from '../theme/theme';
+import {
+  blockCard,
+  blockEyebrow,
+  blockPanel,
+  blockPanelAlt,
+  blockTitle,
+  blockTitleLarge,
+  blockValue,
+  colors,
+  radii,
+  spacing,
+} from '../theme/theme';
 
 function formatPercent(value) {
   return `${Math.round(Number(value || 0) * 100)}%`;
@@ -332,7 +343,7 @@ export function MotionLabScreen({
             </>
           ) : (
             <View style={styles.emptyFrame}>
-              <Text style={styles.emptyTitle}>Load a rep</Text>
+              <Text style={styles.emptyTitle}>Load a Rep</Text>
               <Text style={styles.emptyCopy}>Record or import one volleyball rep to start the Motion Lab pass.</Text>
             </View>
           )}
@@ -400,15 +411,11 @@ const styles = StyleSheet.create({
     paddingBottom: spacing.xxl,
   },
   stageCard: {
+    ...blockCard,
     position: 'relative',
     overflow: 'hidden',
-    borderRadius: 30,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 110, 209, 0.28)',
-    backgroundColor: 'rgba(18, 7, 28, 0.94)',
     padding: spacing.md,
     marginBottom: spacing.md,
-    ...neonShadow,
   },
   stageGlowPrimary: {
     position: 'absolute',
@@ -439,10 +446,8 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   stageTitle: {
-    color: colors.text,
-    fontFamily: 'Bangers',
-    fontSize: 38,
-    letterSpacing: 0.9,
+    ...blockTitleLarge,
+    fontSize: 30,
     marginBottom: 2,
   },
   stageMeta: {
@@ -453,8 +458,8 @@ const styles = StyleSheet.create({
     letterSpacing: 0.9,
   },
   stageBadge: {
-    borderRadius: radii.round,
-    borderWidth: 1,
+    borderRadius: 12,
+    borderWidth: 2,
     borderColor: 'rgba(255, 110, 209, 0.28)',
     backgroundColor: 'rgba(255, 63, 164, 0.12)',
     paddingHorizontal: 12,
@@ -475,16 +480,16 @@ const styles = StyleSheet.create({
   stageBadgeText: {
     color: colors.text,
     fontSize: 11,
-    fontWeight: '700',
+    fontWeight: '900',
     textTransform: 'uppercase',
     letterSpacing: 1.1,
   },
   videoFrame: {
     height: 360,
-    borderRadius: 24,
+    borderRadius: 18,
     overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: 'rgba(255, 110, 209, 0.22)',
+    borderWidth: 2,
+    borderColor: 'rgba(255, 110, 209, 0.28)',
     backgroundColor: '#050109',
     marginBottom: spacing.sm,
   },
@@ -498,17 +503,17 @@ const styles = StyleSheet.create({
     left: 12,
   },
   videoHudPill: {
-    borderRadius: radii.round,
-    borderWidth: 1,
+    borderRadius: 12,
+    borderWidth: 2,
     borderColor: 'rgba(255, 245, 251, 0.16)',
-    backgroundColor: 'rgba(9, 2, 15, 0.76)',
+    backgroundColor: 'rgba(9, 2, 15, 0.78)',
     paddingHorizontal: 12,
     paddingVertical: 6,
   },
   videoHudText: {
     color: colors.text,
     fontSize: 11,
-    fontWeight: '700',
+    fontWeight: '900',
     letterSpacing: 0.8,
     textTransform: 'uppercase',
   },
@@ -521,9 +526,10 @@ const styles = StyleSheet.create({
     right: '14%',
     top: '19%',
     bottom: '9%',
-    borderRadius: 30,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 110, 209, 0.15)',
+    borderRadius: 18,
+    borderWidth: 2,
+    borderColor: 'rgba(255, 110, 209, 0.18)',
+    backgroundColor: 'rgba(255, 63, 164, 0.05)',
   },
   contactGate: {
     position: 'absolute',
@@ -531,9 +537,9 @@ const styles = StyleSheet.create({
     right: '17%',
     width: 74,
     height: 130,
-    borderRadius: 26,
-    borderWidth: 1,
-    borderColor: 'rgba(126, 249, 255, 0.24)',
+    borderRadius: 14,
+    borderWidth: 2,
+    borderColor: 'rgba(126, 249, 255, 0.28)',
   },
   trailDot: {
     position: 'absolute',
@@ -563,15 +569,15 @@ const styles = StyleSheet.create({
     position: 'absolute',
     paddingHorizontal: 10,
     paddingVertical: 5,
-    borderRadius: radii.round,
-    borderWidth: 1,
+    borderRadius: 12,
+    borderWidth: 2,
     borderColor: 'rgba(255, 199, 102, 0.4)',
     backgroundColor: 'rgba(41, 19, 8, 0.92)',
   },
   hitchFlagLabel: {
     color: '#FFC766',
     fontSize: 10,
-    fontWeight: '700',
+    fontWeight: '900',
     letterSpacing: 1,
   },
   emptyFrame: {
@@ -581,10 +587,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
   },
   emptyTitle: {
-    color: colors.text,
-    fontFamily: 'Bangers',
-    fontSize: 30,
-    letterSpacing: 0.7,
+    ...blockTitle,
+    fontSize: 22,
     marginBottom: spacing.xs,
   },
   emptyCopy: {
@@ -608,19 +612,16 @@ const styles = StyleSheet.create({
     marginBottom: spacing.xs,
   },
   settingTile: {
+    ...blockPanelAlt,
     width: '23.4%',
     minHeight: 94,
-    borderRadius: 18,
-    borderWidth: 1,
-    borderColor: 'rgba(126, 249, 255, 0.16)',
-    backgroundColor: 'rgba(10, 4, 17, 0.78)',
     paddingHorizontal: 10,
     paddingVertical: 10,
     marginBottom: spacing.sm,
   },
   settingTilePressed: {
     transform: [{scale: 0.98}],
-    borderColor: 'rgba(255, 110, 209, 0.38)',
+    borderColor: 'rgba(255, 110, 209, 0.54)',
   },
   settingTileDisabled: {
     opacity: 0.62,
@@ -628,15 +629,14 @@ const styles = StyleSheet.create({
   settingLabel: {
     color: colors.textDim,
     fontSize: 10,
+    fontWeight: '800',
     textTransform: 'uppercase',
     letterSpacing: 1,
     marginBottom: 5,
   },
   settingValue: {
-    color: colors.text,
-    fontFamily: 'Bangers',
-    fontSize: 22,
-    letterSpacing: 0.5,
+    ...blockValue,
+    fontSize: 18,
     marginBottom: 4,
   },
   settingDetail: {
@@ -656,23 +656,21 @@ const styles = StyleSheet.create({
     marginBottom: spacing.sm,
   },
   sectionTitle: {
-    color: colors.text,
-    fontFamily: 'Bangers',
-    fontSize: 26,
-    letterSpacing: 0.7,
+    ...blockTitle,
+    fontSize: 22,
   },
   sectionMetaPill: {
-    borderRadius: radii.round,
-    borderWidth: 1,
+    borderRadius: 12,
+    borderWidth: 2,
     borderColor: 'rgba(255, 110, 209, 0.24)',
-    backgroundColor: 'rgba(255, 63, 164, 0.1)',
+    backgroundColor: 'rgba(255, 63, 164, 0.12)',
     paddingHorizontal: 12,
     paddingVertical: 5,
   },
   sectionMetaText: {
     color: colors.primarySoft,
     fontSize: 10,
-    fontWeight: '700',
+    fontWeight: '900',
     textTransform: 'uppercase',
     letterSpacing: 1,
   },
@@ -685,23 +683,21 @@ const styles = StyleSheet.create({
   gridTile: {
     width: '48%',
     minHeight: 162,
-    borderRadius: 22,
-    borderWidth: 1,
+    borderRadius: 18,
+    borderWidth: 2,
     padding: 14,
     marginBottom: spacing.sm,
   },
   metricTile: {
-    borderColor: colors.stroke,
-    backgroundColor: 'rgba(24, 10, 34, 0.92)',
-    ...neonShadow,
+    ...blockCard,
+    shadowOpacity: 0.24,
   },
   adviceTile: {
-    borderColor: 'rgba(126, 249, 255, 0.2)',
-    backgroundColor: 'rgba(12, 8, 23, 0.88)',
+    ...blockPanelAlt,
   },
   gridTilePressed: {
     transform: [{scale: 0.99}],
-    borderColor: 'rgba(255, 110, 209, 0.4)',
+    borderColor: 'rgba(255, 110, 209, 0.54)',
   },
   gridTileTopRow: {
     flexDirection: 'row',
@@ -713,13 +709,14 @@ const styles = StyleSheet.create({
   gridTileLabel: {
     color: colors.textDim,
     fontSize: 10,
+    fontWeight: '800',
     textTransform: 'uppercase',
     letterSpacing: 1.1,
   },
   historyPill: {
-    borderRadius: radii.round,
-    borderWidth: 1,
-    borderColor: 'rgba(126, 249, 255, 0.22)',
+    borderRadius: 10,
+    borderWidth: 2,
+    borderColor: 'rgba(126, 249, 255, 0.24)',
     backgroundColor: 'rgba(126, 249, 255, 0.1)',
     paddingHorizontal: 8,
     paddingVertical: 4,
@@ -727,30 +724,27 @@ const styles = StyleSheet.create({
   historyPillText: {
     color: colors.accent,
     fontSize: 9,
-    fontWeight: '700',
+    fontWeight: '900',
     textTransform: 'uppercase',
     letterSpacing: 1,
   },
   cuePill: {
-    borderRadius: radii.round,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 110, 209, 0.22)',
-    backgroundColor: 'rgba(255, 63, 164, 0.1)',
+    borderRadius: 10,
+    borderWidth: 2,
+    borderColor: 'rgba(255, 110, 209, 0.24)',
+    backgroundColor: 'rgba(255, 63, 164, 0.12)',
     paddingHorizontal: 8,
     paddingVertical: 4,
   },
   cuePillText: {
     color: colors.primarySoft,
     fontSize: 9,
-    fontWeight: '700',
+    fontWeight: '900',
     textTransform: 'uppercase',
     letterSpacing: 1,
   },
   gridTileValue: {
-    color: colors.primarySoft,
-    fontFamily: 'Bangers',
-    fontSize: 30,
-    letterSpacing: 0.7,
+    ...blockValue,
     marginBottom: 8,
   },
   gridTileDetail: {
@@ -759,11 +753,8 @@ const styles = StyleSheet.create({
     lineHeight: 18,
   },
   adviceTitle: {
-    color: colors.text,
-    fontFamily: 'Bangers',
-    fontSize: 24,
-    letterSpacing: 0.6,
+    ...blockTitle,
+    fontSize: 20,
     marginBottom: 8,
   },
 });
-

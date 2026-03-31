@@ -1,8 +1,18 @@
-﻿import {ScrollView, StyleSheet, Text, View} from 'react-native';
+import {ScrollView, StyleSheet, Text, View} from 'react-native';
 
 import {NeonButton} from '../components/NeonButton';
 import {PageHeader} from '../components/PageHeader';
-import {colors, neonShadow, radii, spacing} from '../theme/theme';
+import {
+  blockCard,
+  blockEyebrow,
+  blockPanel,
+  blockPanelAlt,
+  blockTitle,
+  blockTitleLarge,
+  blockValue,
+  colors,
+  spacing,
+} from '../theme/theme';
 
 function formatMetric(value, suffix = '') {
   return Number.isFinite(value) ? `${value.toFixed(1)}${suffix}` : '--';
@@ -21,7 +31,7 @@ function getBestMetric(sessions, field) {
 
 export function ProfilesScreen({analysisResult, onGoHome, onOpenScreen, onSaveSessionToProfile, profiles, selectedVideo}) {
   return (
-    <ScrollView style={styles.safeArea} contentContainerStyle={styles.content}>
+    <ScrollView contentContainerStyle={styles.content} style={styles.safeArea}>
       <PageHeader onHomePress={onGoHome} />
 
       <View style={styles.heroCard}>
@@ -107,26 +117,16 @@ const styles = StyleSheet.create({
     paddingBottom: spacing.xxl,
   },
   heroCard: {
-    borderRadius: radii.lg,
-    borderWidth: 1,
-    borderColor: colors.stroke,
-    backgroundColor: colors.surface,
+    ...blockCard,
     padding: spacing.lg,
     marginBottom: spacing.lg,
-    ...neonShadow,
   },
   cardEyebrow: {
-    color: colors.accent,
-    fontSize: 12,
-    textTransform: 'uppercase',
-    letterSpacing: 1.5,
+    ...blockEyebrow,
     marginBottom: 6,
   },
   cardTitle: {
-    color: colors.text,
-    fontFamily: 'Bangers',
-    fontSize: 34,
-    letterSpacing: 0.8,
+    ...blockTitleLarge,
     marginBottom: spacing.sm,
   },
   cardCopy: {
@@ -135,18 +135,13 @@ const styles = StyleSheet.create({
     lineHeight: 22,
   },
   sessionCard: {
-    borderRadius: radii.md,
-    borderWidth: 1,
-    borderColor: 'rgba(126, 249, 255, 0.18)',
-    backgroundColor: 'rgba(17, 11, 28, 0.88)',
+    ...blockPanelAlt,
     padding: spacing.md,
     marginBottom: spacing.lg,
   },
   sectionTitle: {
-    color: colors.text,
-    fontFamily: 'Bangers',
-    fontSize: 28,
-    letterSpacing: 0.7,
+    ...blockTitle,
+    fontSize: 22,
     marginBottom: spacing.xs,
   },
   sectionCopy: {
@@ -165,24 +160,19 @@ const styles = StyleSheet.create({
     marginBottom: spacing.lg,
   },
   profileCard: {
-    borderRadius: radii.lg,
-    borderWidth: 1,
-    borderColor: colors.stroke,
-    backgroundColor: 'rgba(24, 10, 34, 0.92)',
+    ...blockCard,
     padding: spacing.lg,
-    ...neonShadow,
   },
   profileName: {
-    color: colors.text,
-    fontFamily: 'Bangers',
-    fontSize: 30,
-    letterSpacing: 0.7,
+    ...blockTitle,
+    fontSize: 24,
   },
   profileRole: {
     color: colors.primarySoft,
-    fontSize: 13,
+    fontSize: 12,
+    fontWeight: '800',
     textTransform: 'uppercase',
-    letterSpacing: 1.1,
+    letterSpacing: 1.2,
     marginBottom: spacing.xs,
   },
   profileFocus: {
@@ -197,39 +187,29 @@ const styles = StyleSheet.create({
     marginBottom: spacing.md,
   },
   metricBlock: {
+    ...blockPanel,
     width: '31%',
-    borderRadius: radii.md,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 110, 209, 0.18)',
-    backgroundColor: 'rgba(12, 5, 20, 0.82)',
     padding: spacing.sm,
   },
   metricLabel: {
     color: colors.textDim,
-    fontSize: 11,
+    fontSize: 10,
+    fontWeight: '800',
     textTransform: 'uppercase',
     letterSpacing: 1,
     marginBottom: 4,
   },
   metricValue: {
-    color: colors.text,
-    fontFamily: 'Bangers',
-    fontSize: 22,
-    letterSpacing: 0.5,
+    ...blockValue,
+    fontSize: 18,
   },
   latestCard: {
-    borderRadius: radii.md,
-    borderWidth: 1,
-    borderColor: 'rgba(126, 249, 255, 0.18)',
-    backgroundColor: 'rgba(14, 7, 23, 0.78)',
+    ...blockPanelAlt,
     padding: spacing.md,
     marginBottom: spacing.md,
   },
   latestTitle: {
-    color: colors.accent,
-    fontSize: 12,
-    textTransform: 'uppercase',
-    letterSpacing: 1.2,
+    ...blockEyebrow,
     marginBottom: spacing.xs,
   },
   latestCopy: {
