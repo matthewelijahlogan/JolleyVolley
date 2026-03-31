@@ -30,23 +30,25 @@ function MiniActionButton({label, onPress, tone = 'primary'}) {
 
 function CategoryChip({active, label, onPress}) {
   return (
-    <Pressable onPress={onPress} style={({pressed}) => [styles.categoryChip, active && styles.categoryChipActive, pressed && styles.categoryChipPressed]}>
+    <Pressable
+      onPress={onPress}
+      style={({pressed}) => [styles.categoryChip, active && styles.categoryChipActive, pressed && styles.categoryChipPressed]}>
       <Text style={[styles.categoryChipText, active && styles.categoryChipTextActive]}>{label}</Text>
     </Pressable>
   );
 }
 
-function PlayerStatTile({player, statCategory, teamSide, onAdjustPlayerStat}) {
+function PlayerStatTile({isVeryCompact, player, statCategory, teamSide, onAdjustPlayerStat}) {
   const value = Number(player.stats?.[statCategory.id] || 0);
 
   return (
-    <View style={styles.playerTile}>
+    <View style={[styles.playerTile, isVeryCompact && styles.playerTileCompact]}>
       <View style={styles.playerTileTop}>
-        <Text style={styles.playerJersey}>#{player.jersey}</Text>
+        <Text style={[styles.playerJersey, styles.bangersInset]}>#{player.jersey}</Text>
         <Text numberOfLines={1} style={styles.playerName}>{player.name}</Text>
         <Text style={styles.playerRole}>{player.role}</Text>
       </View>
-      <Text style={styles.playerStatValue}>{value}</Text>
+      <Text style={[styles.playerStatValue, styles.bangersInset]}>{value}</Text>
       <View style={styles.playerActionRow}>
         <MiniActionButton
           label="-1"
@@ -59,18 +61,18 @@ function PlayerStatTile({player, statCategory, teamSide, onAdjustPlayerStat}) {
   );
 }
 
-function QuickTeamPanel({players, statCategory, teamLabel, teamSide, onAdjustPlayerStat}) {
+function QuickTeamPanel({isCompact, isVeryCompact, players, statCategory, teamLabel, teamSide, onAdjustPlayerStat}) {
   const total = useMemo(() => sumRosterStat(players, statCategory.id), [players, statCategory.id]);
 
   return (
-    <View style={styles.quickTeamPanel}>
-      <View style={styles.quickTeamHeader}>
-        <View>
+    <View style={[styles.quickTeamPanel, isCompact && styles.quickTeamPanelCompact]}>
+      <View style={[styles.quickTeamHeader, isCompact && styles.quickTeamHeaderCompact]}>
+        <View style={styles.quickTeamTitleWrap}>
           <Text style={styles.quickTeamEyebrow}>{teamSide === 'home' ? 'Home' : 'Away'}</Text>
-          <Text style={styles.quickTeamTitle}>{teamLabel}</Text>
+          <Text numberOfLines={2} style={[styles.quickTeamTitle, styles.bangersInset]}>{teamLabel}</Text>
         </View>
-        <View style={styles.quickTeamTotalPill}>
-          <Text style={styles.quickTeamTotalValue}>{total}</Text>
+        <View style={[styles.quickTeamTotalPill, isCompact && styles.quickTeamTotalPillCompact]}>
+          <Text style={[styles.quickTeamTotalValue, styles.bangersInset]}>{total}</Text>
           <Text style={styles.quickTeamTotalLabel}>{statCategory.label}</Text>
         </View>
       </View>
@@ -78,6 +80,7 @@ function QuickTeamPanel({players, statCategory, teamLabel, teamSide, onAdjustPla
       <View style={styles.playerGrid}>
         {players.map(player => (
           <PlayerStatTile
+            isVeryCompact={isVeryCompact}
             key={player.id}
             onAdjustPlayerStat={onAdjustPlayerStat}
             player={player}
@@ -101,14 +104,14 @@ function ReviewTeamCard({roster, teamName}) {
       <View style={styles.reviewHeader}>
         <View>
           <Text style={styles.reviewEyebrow}>Team Review</Text>
-          <Text style={styles.reviewTitle}>{teamName}</Text>
+          <Text style={[styles.reviewTitle, styles.bangersInset]}>{teamName}</Text>
         </View>
       </View>
 
       <View style={styles.reviewTotalsRow}>
         {totals.map(category => (
           <View key={category.id} style={styles.reviewTotalPill}>
-            <Text style={styles.reviewTotalValue}>{category.value}</Text>
+            <Text style={[styles.reviewTotalValue, styles.bangersInset]}>{category.value}</Text>
             <Text style={styles.reviewTotalLabel}>{category.label}</Text>
           </View>
         ))}
@@ -126,7 +129,7 @@ function ReviewTeamCard({roster, teamName}) {
 
           {roster.map(player => (
             <View key={player.id} style={styles.reviewRow}>
-              <Text style={[styles.reviewCell, styles.reviewCellJersey]}>#{player.jersey}</Text>
+              <Text style={[styles.reviewCell, styles.reviewCellJersey, styles.bangersInset]}>#{player.jersey}</Text>
               <Text numberOfLines={1} style={[styles.reviewCell, styles.reviewCellName]}>{player.name}</Text>
               {scoreboardStatCategories.map(category => (
                 <Text key={`${player.id}-${category.id}`} style={[styles.reviewCell, styles.reviewCellStat]}>
@@ -156,9 +159,15 @@ export function CoachBoardScreen({
   const pagerRef = useRef(null);
   const [activeStatIndex, setActiveStatIndex] = useState(0);
   const isFinal = coachBoard.matchStatus === 'final';
-  const panelPageWidth = Math.max(280, width - (spacing.lg * 2) - (spacing.lg * 2));
+  const isCompact = width < 430;
+  const isVeryCompact = width < 380;
+  const screenPadding = isCompact ? spacing.md : spacing.lg;
+  const cardPadding = isCompact ? spacing.md : spacing.lg;
+  const panelPageWidth = Math.max(248, width - (screenPadding * 2) - (cardPadding * 2));
   const activeStatCategory = scoreboardStatCategories[activeStatIndex] || scoreboardStatCategories[0];
-  const servingTeamName = coachBoard.possession === 'home' ? coachBoard.homeTeam : coachBoard.awayTeam;
+  const homeDisplayLabel = 'HOME';
+  const awayDisplayLabel = 'AWAY';
+  const servingTeamName = coachBoard.possession === 'home' ? homeDisplayLabel : awayDisplayLabel;
 
   const jumpToStatPage = index => {
     setActiveStatIndex(index);
@@ -178,26 +187,40 @@ export function CoachBoardScreen({
   };
 
   return (
-    <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false} style={styles.safeArea}>
+    <ScrollView contentContainerStyle={[styles.content, isCompact && styles.contentCompact]} showsVerticalScrollIndicator={false} style={styles.safeArea}>
       <PageHeader onHomePress={onGoHome} />
 
-      <View style={styles.scoreCard}>
-        <View style={styles.matchHeaderRow}>
+      <View style={[styles.scoreCard, isCompact && styles.scoreCardCompact]}>
+        <View style={[styles.matchHeaderRow, isCompact && styles.matchHeaderRowCompact]}>
           <View style={[styles.modePill, isFinal && styles.modePillFinal]}>
             <Text style={styles.modePillText}>{isFinal ? 'Final Review' : 'Live Match'}</Text>
           </View>
-          <Text style={styles.matchStamp}>{isFinal && coachBoard.finishedAt ? `Closed ${coachBoard.finishedAt}` : 'Big score first. Swipe stats second.'}</Text>
+          <Text style={[styles.matchStamp, isCompact && styles.matchStampCompact]}>
+            {isFinal && coachBoard.finishedAt ? `Closed ${coachBoard.finishedAt}` : 'Big score first. Swipe stats second.'}
+          </Text>
         </View>
 
-        <View style={styles.scoreMainRow}>
-          <View style={styles.teamScorePanel}>
-            <Text style={styles.teamName}>{coachBoard.homeTeam}</Text>
+        <View style={[styles.scoreMainRow, isCompact && styles.scoreMainRowCompact]}>
+          <View style={[styles.teamScorePanel, isCompact && styles.teamScorePanelCompact]}>
+            <Text numberOfLines={2} style={[styles.teamName, styles.bangersInset, isCompact && styles.teamNameCompact]}>{homeDisplayLabel}</Text>
             <View style={[styles.serveBadge, coachBoard.possession === 'home' && styles.serveBadgeActive]}>
               <Text style={[styles.serveBadgeText, coachBoard.possession === 'home' && styles.serveBadgeTextActive]}>
                 {coachBoard.possession === 'home' ? 'Serving' : 'Receive'}
               </Text>
             </View>
-            <Text style={styles.scoreValue}>{coachBoard.homeScore}</Text>
+            <View style={[styles.scoreValueFrame, isCompact && styles.scoreValueFrameCompact]}>
+              <Text
+                adjustsFontSizeToFit
+                numberOfLines={1}
+                style={[
+                  styles.scoreValue,
+                  styles.bangersInset,
+                  isCompact && styles.scoreValueCompact,
+                  isVeryCompact && styles.scoreValueVeryCompact,
+                ]}>
+                {coachBoard.homeScore}
+              </Text>
+            </View>
 
             {!isFinal ? (
               <>
@@ -218,20 +241,32 @@ export function CoachBoardScreen({
             )}
           </View>
 
-          <View style={styles.scoreCenterRail}>
+          <View style={[styles.scoreCenterRail, isCompact && styles.scoreCenterRailCompact]}>
             <Text style={styles.centerEyebrow}>Match</Text>
-            <Text style={styles.centerValue}>VS</Text>
-            <Text style={styles.centerMeta}>Serve with {servingTeamName}</Text>
+            <Text style={[styles.centerValue, styles.bangersInset, isCompact && styles.centerValueCompact]}>VS</Text>
+            <Text style={[styles.centerMeta, isCompact && styles.centerMetaCompact]}>Serve with {servingTeamName}</Text>
           </View>
 
-          <View style={styles.teamScorePanel}>
-            <Text style={styles.teamName}>{coachBoard.awayTeam}</Text>
+          <View style={[styles.teamScorePanel, isCompact && styles.teamScorePanelCompact]}>
+            <Text numberOfLines={2} style={[styles.teamName, styles.bangersInset, isCompact && styles.teamNameCompact]}>{awayDisplayLabel}</Text>
             <View style={[styles.serveBadge, coachBoard.possession === 'away' && styles.serveBadgeActive]}>
               <Text style={[styles.serveBadgeText, coachBoard.possession === 'away' && styles.serveBadgeTextActive]}>
                 {coachBoard.possession === 'away' ? 'Serving' : 'Receive'}
               </Text>
             </View>
-            <Text style={styles.scoreValue}>{coachBoard.awayScore}</Text>
+            <View style={[styles.scoreValueFrame, isCompact && styles.scoreValueFrameCompact]}>
+              <Text
+                adjustsFontSizeToFit
+                numberOfLines={1}
+                style={[
+                  styles.scoreValue,
+                  styles.bangersInset,
+                  isCompact && styles.scoreValueCompact,
+                  isVeryCompact && styles.scoreValueVeryCompact,
+                ]}>
+                {coachBoard.awayScore}
+              </Text>
+            </View>
 
             {!isFinal ? (
               <>
@@ -255,12 +290,20 @@ export function CoachBoardScreen({
 
         {!isFinal ? (
           <View style={styles.scoreFooter}>
-            <View style={styles.serveToggleRow}>
-              <MiniActionButton label="Home Serve" onPress={() => onSetPossession('home')} tone={coachBoard.possession === 'home' ? 'primary' : 'secondary'} />
-              <MiniActionButton label="Away Serve" onPress={() => onSetPossession('away')} tone={coachBoard.possession === 'away' ? 'primary' : 'secondary'} />
+            <View style={[styles.serveToggleRow, isCompact && styles.serveToggleRowCompact]}>
+              <MiniActionButton
+                label="Home Serve"
+                onPress={() => onSetPossession('home')}
+                tone={coachBoard.possession === 'home' ? 'primary' : 'secondary'}
+              />
+              <MiniActionButton
+                label="Away Serve"
+                onPress={() => onSetPossession('away')}
+                tone={coachBoard.possession === 'away' ? 'primary' : 'secondary'}
+              />
             </View>
 
-            <View style={styles.modeActionRow}>
+            <View style={[styles.modeActionRow, isCompact && styles.modeActionRowCompact]}>
               <View style={styles.modeButtonWrap}>
                 <NeonButton label="Finish Match" onPress={onFinishMatch} />
               </View>
@@ -270,7 +313,7 @@ export function CoachBoardScreen({
             </View>
           </View>
         ) : (
-          <View style={styles.modeActionRow}>
+          <View style={[styles.modeActionRow, isCompact && styles.modeActionRowCompact]}>
             <View style={styles.modeButtonWrap}>
               <NeonButton label="Reopen Match" onPress={onResumeMatch} />
             </View>
@@ -285,18 +328,18 @@ export function CoachBoardScreen({
         <>
           <View style={styles.reviewIntro}>
             <Text style={styles.reviewIntroEyebrow}>Finished Match</Text>
-            <Text style={styles.reviewIntroTitle}>Individual team statistics</Text>
+            <Text style={[styles.reviewIntroTitle, styles.bangersInset]}>Individual team statistics</Text>
             <Text style={styles.reviewIntroCopy}>Every player line stays visible here after the match is closed so you can review both teams cleanly.</Text>
           </View>
-          <ReviewTeamCard roster={coachBoard.homeRoster} teamName={coachBoard.homeTeam} />
-          <ReviewTeamCard roster={coachBoard.awayRoster} teamName={coachBoard.awayTeam} />
+          <ReviewTeamCard roster={coachBoard.homeRoster} teamName={homeDisplayLabel} />
+          <ReviewTeamCard roster={coachBoard.awayRoster} teamName={awayDisplayLabel} />
         </>
       ) : (
-        <View style={styles.panelCard}>
+        <View style={[styles.panelCard, isCompact && styles.panelCardCompact]}>
           <View style={styles.panelHeader}>
             <View>
               <Text style={styles.panelEyebrow}>Swipeable Stat Panel</Text>
-              <Text style={styles.panelTitle}>{activeStatCategory.label}</Text>
+              <Text style={[styles.panelTitle, styles.bangersInset, isCompact && styles.panelTitleCompact]}>{activeStatCategory.label}</Text>
             </View>
             <Text style={styles.panelHint}>{activeStatCategory.hint}</Text>
           </View>
@@ -307,22 +350,25 @@ export function CoachBoardScreen({
             pagingEnabled
             ref={pagerRef}
             showsHorizontalScrollIndicator={false}
-            style={styles.pager}
-          >
+            style={styles.pager}>
             {scoreboardStatCategories.map(category => (
               <View key={category.id} style={[styles.pagerPage, {width: panelPageWidth}]}> 
                 <QuickTeamPanel
+                  isCompact={isCompact}
+                  isVeryCompact={isVeryCompact}
                   onAdjustPlayerStat={onAdjustPlayerStat}
                   players={coachBoard.homeRoster}
                   statCategory={category}
-                  teamLabel={coachBoard.homeTeam}
+                  teamLabel={homeDisplayLabel}
                   teamSide="home"
                 />
                 <QuickTeamPanel
+                  isCompact={isCompact}
+                  isVeryCompact={isVeryCompact}
                   onAdjustPlayerStat={onAdjustPlayerStat}
                   players={coachBoard.awayRoster}
                   statCategory={category}
-                  teamLabel={coachBoard.awayTeam}
+                  teamLabel={awayDisplayLabel}
                   teamSide="away"
                 />
               </View>
@@ -361,6 +407,13 @@ const styles = StyleSheet.create({
     paddingTop: spacing.xl,
     paddingBottom: spacing.xxl,
   },
+  contentCompact: {
+    paddingHorizontal: spacing.md,
+  },
+  bangersInset: {
+    paddingLeft: 6,
+    paddingRight: 16,
+  },
   scoreCard: {
     borderRadius: 32,
     borderWidth: 1,
@@ -370,12 +423,19 @@ const styles = StyleSheet.create({
     marginBottom: spacing.lg,
     ...neonShadow,
   },
+  scoreCardCompact: {
+    padding: spacing.md,
+  },
   matchHeaderRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: spacing.md,
     gap: spacing.sm,
+  },
+  matchHeaderRowCompact: {
+    alignItems: 'flex-start',
+    flexDirection: 'column',
   },
   modePill: {
     borderRadius: radii.round,
@@ -402,12 +462,19 @@ const styles = StyleSheet.create({
     fontSize: 12,
     textAlign: 'right',
   },
+  matchStampCompact: {
+    textAlign: 'left',
+  },
   scoreMainRow: {
     flexDirection: 'row',
     alignItems: 'stretch',
     justifyContent: 'space-between',
     marginBottom: spacing.lg,
     gap: spacing.sm,
+  },
+  scoreMainRowCompact: {
+    flexDirection: 'column',
+    gap: spacing.md,
   },
   teamScorePanel: {
     flex: 1,
@@ -418,12 +485,18 @@ const styles = StyleSheet.create({
     padding: spacing.md,
     alignItems: 'center',
   },
+  teamScorePanelCompact: {
+    width: '100%',
+  },
   teamName: {
     color: colors.text,
     fontFamily: 'Bangers',
     fontSize: 28,
     letterSpacing: 0.8,
     textAlign: 'center',
+  },
+  teamNameCompact: {
+    fontSize: 24,
   },
   serveBadge: {
     marginTop: spacing.sm,
@@ -448,13 +521,33 @@ const styles = StyleSheet.create({
   serveBadgeTextActive: {
     color: colors.text,
   },
+  scoreValueFrame: {
+    minWidth: 154,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: spacing.sm,
+    marginVertical: spacing.sm,
+  },
+  scoreValueFrameCompact: {
+    minWidth: 124,
+    width: '100%',
+    marginVertical: spacing.xs,
+  },
   scoreValue: {
     color: colors.text,
     fontFamily: 'Bangers',
     fontSize: 102,
-    lineHeight: 102,
-    letterSpacing: 1.4,
-    marginVertical: spacing.sm,
+    lineHeight: 110,
+    letterSpacing: 1,
+    textAlign: 'center',
+  },
+  scoreValueCompact: {
+    fontSize: 82,
+    lineHeight: 90,
+  },
+  scoreValueVeryCompact: {
+    fontSize: 70,
+    lineHeight: 78,
   },
   pointControlRow: {
     width: '100%',
@@ -496,6 +589,17 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingHorizontal: 4,
   },
+  scoreCenterRailCompact: {
+    width: '100%',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    borderRadius: radii.md,
+    borderWidth: 1,
+    borderColor: 'rgba(126, 249, 255, 0.16)',
+    backgroundColor: 'rgba(8, 8, 14, 0.48)',
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+  },
   centerEyebrow: {
     color: colors.textDim,
     fontSize: 11,
@@ -510,11 +614,20 @@ const styles = StyleSheet.create({
     letterSpacing: 1,
     marginVertical: spacing.xs,
   },
+  centerValueCompact: {
+    fontSize: 30,
+    marginVertical: 0,
+  },
   centerMeta: {
     color: colors.textMuted,
     fontSize: 11,
     lineHeight: 16,
     textAlign: 'center',
+  },
+  centerMetaCompact: {
+    flex: 1,
+    textAlign: 'right',
+    marginLeft: spacing.sm,
   },
   scoreFooter: {
     gap: spacing.md,
@@ -523,10 +636,16 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: spacing.sm,
   },
+  serveToggleRowCompact: {
+    flexDirection: 'column',
+  },
   modeActionRow: {
     flexDirection: 'row',
     gap: spacing.sm,
     marginTop: spacing.sm,
+  },
+  modeActionRowCompact: {
+    flexDirection: 'column',
   },
   modeButtonWrap: {
     flex: 1,
@@ -572,6 +691,9 @@ const styles = StyleSheet.create({
     padding: spacing.lg,
     ...neonShadow,
   },
+  panelCardCompact: {
+    padding: spacing.md,
+  },
   panelHeader: {
     marginBottom: spacing.md,
     gap: spacing.xs,
@@ -589,6 +711,9 @@ const styles = StyleSheet.create({
     fontFamily: 'Bangers',
     fontSize: 34,
     letterSpacing: 0.8,
+  },
+  panelTitleCompact: {
+    fontSize: 28,
   },
   panelHint: {
     color: colors.textMuted,
@@ -609,12 +734,22 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(13, 10, 20, 0.86)',
     padding: spacing.md,
   },
+  quickTeamPanelCompact: {
+    padding: spacing.sm,
+  },
   quickTeamHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: spacing.md,
     gap: spacing.sm,
+  },
+  quickTeamHeaderCompact: {
+    alignItems: 'flex-start',
+    flexDirection: 'column',
+  },
+  quickTeamTitleWrap: {
+    flexShrink: 1,
   },
   quickTeamEyebrow: {
     color: colors.textDim,
@@ -640,6 +775,9 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.sm,
     alignItems: 'center',
   },
+  quickTeamTotalPillCompact: {
+    alignSelf: 'stretch',
+  },
   quickTeamTotalValue: {
     color: colors.accent,
     fontFamily: 'Bangers',
@@ -664,6 +802,9 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(255, 110, 209, 0.18)',
     backgroundColor: 'rgba(255, 63, 164, 0.07)',
     padding: spacing.sm,
+  },
+  playerTileCompact: {
+    width: '100%',
   },
   playerTileTop: {
     marginBottom: spacing.sm,
@@ -858,3 +999,4 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
 });
+
