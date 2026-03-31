@@ -1,5 +1,5 @@
 import React, {useEffect, useMemo, useRef, useState} from 'react';
-import {BackHandler, StatusBar, View} from 'react-native';
+import {Alert, BackHandler, StatusBar, View} from 'react-native';
 
 import {SplashOverlay} from './src/components/SplashOverlay';
 import {initialAnalysisInput, initialCoachBoard, initialProfiles} from './src/data/dashboard';
@@ -15,7 +15,7 @@ import {MotionLabMenuScreen} from './src/screens/MotionLabMenuScreen';
 import {MotionLabScreen} from './src/screens/MotionLabScreen';
 import {PlaybackScreen} from './src/screens/PlaybackScreen';
 import {ProfilesScreen} from './src/screens/ProfilesScreen';
-import {runVideoAnalysis} from './src/utils/analysis';
+import {runVideoAnalysis, validateMotionCapture} from './src/utils/analysis';
 
 const HOME_SCREEN = 'home';
 
@@ -78,6 +78,7 @@ export default function App() {
   const [trackingResult, setTrackingResult] = useState(null);
   const [trackingStatus, setTrackingStatus] = useState('idle');
   const [trackingError, setTrackingError] = useState('');
+  const [trackingPrompt, setTrackingPrompt] = useState(null);
   const [analysisResult, setAnalysisResult] = useState(() => runVideoAnalysis(initialAnalysisInput, null));
   const [coachBoard, setCoachBoard] = useState(initialCoachBoard);
   const [profiles, setProfiles] = useState(initialProfiles);
@@ -156,15 +157,30 @@ export default function App() {
       setTrackingStatus('running');
       setTrackingError('');
       const result = await analyzeMotionVideo(selectedVideo.uri);
+      const validation = validateMotionCapture(result);
+
+      if (!validation.isValid) {
+        setTrackingResult(null);
+        setTrackingStatus('recapture');
+        setTrackingError(validation.message);
+        setTrackingPrompt(validation);
+        setAnalysisInput(initialAnalysisInput);
+        setAnalysisResult(runVideoAnalysis(initialAnalysisInput, null));
+        Alert.alert(validation.title, validation.message);
+        return;
+      }
+
       const nextAnalysisInput = buildAnalysisInputFromTracking(result);
       const nextAnalysisResult = runVideoAnalysis(nextAnalysisInput, result);
 
+      setTrackingPrompt(null);
       setTrackingResult(result);
       setTrackingStatus('ready');
       setAnalysisInput(nextAnalysisInput);
       setAnalysisResult(nextAnalysisResult);
       setMotionHistory(current => [createMotionHistoryEntry(nextAnalysisResult, selectedVideo), ...current].slice(0, 60));
     } catch (error) {
+      setTrackingPrompt(null);
       setTrackingResult(null);
       setTrackingStatus('error');
       setTrackingError(error?.message || 'Unable to analyze the selected clip.');
@@ -177,6 +193,7 @@ export default function App() {
     setTrackingResult(null);
     setTrackingStatus('idle');
     setTrackingError('');
+    setTrackingPrompt(null);
   };
 
   const handleOpenMetricHistory = metricId => {
@@ -245,6 +262,7 @@ export default function App() {
         onSelectVideo={handleSelectVideo}
         selectedVideo={selectedVideo}
         trackingError={trackingError}
+        trackingPrompt={trackingPrompt}
         trackingResult={trackingResult}
         trackingStatus={trackingStatus}
         {...sharedScreenProps}
@@ -332,3 +350,4 @@ export default function App() {
     </View>
   );
 }
+

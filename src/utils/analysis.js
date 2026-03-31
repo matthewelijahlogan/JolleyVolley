@@ -53,6 +53,91 @@ function clampUnit(value) {
   return Math.min(0.98, Math.max(0.02, value));
 }
 
+function readNormalizedPointValue(point, primaryKey, fallbackKey) {
+  const primaryValue = point?.[primaryKey];
+  const fallbackValue = point?.[fallbackKey];
+
+  if (Number.isFinite(primaryValue)) {
+    return primaryValue;
+  }
+
+  const stringValue = typeof fallbackValue === 'string' ? fallbackValue.replace('%', '') : fallbackValue;
+  const parsed = parseFloat(stringValue);
+  return Number.isFinite(parsed) ? parsed / 100 : null;
+}
+
+function normalizeTrailPoint(point) {
+  const x = readNormalizedPointValue(point, 'x', 'left');
+  const y = readNormalizedPointValue(point, 'y', 'top');
+
+  if (!Number.isFinite(x) || !Number.isFinite(y)) {
+    return null;
+  }
+
+  return {x, y};
+}
+
+function measureTrail(trail = []) {
+  const points = trail.map(normalizeTrailPoint).filter(Boolean);
+  if (points.length === 0) {
+    return {
+      count: 0,
+      pathLength: 0,
+      horizontalSpan: 0,
+      verticalSpan: 0,
+      displacement: 0,
+      rise: 0,
+    };
+  }
+
+  let pathLength = 0;
+  let minX = points[0].x;
+  let maxX = points[0].x;
+  let minY = points[0].y;
+  let maxY = points[0].y;
+
+  for (let index = 1; index < points.length; index += 1) {
+    const previous = points[index - 1];
+    const current = points[index];
+    const dx = current.x - previous.x;
+    const dy = current.y - previous.y;
+    pathLength += Math.sqrt((dx * dx) + (dy * dy));
+    minX = Math.min(minX, current.x);
+    maxX = Math.max(maxX, current.x);
+    minY = Math.min(minY, current.y);
+    maxY = Math.max(maxY, current.y);
+  }
+
+  const first = points[0];
+  const last = points[points.length - 1];
+  const displacementX = last.x - first.x;
+  const displacementY = last.y - first.y;
+
+  return {
+    count: points.length,
+    pathLength,
+    horizontalSpan: maxX - minX,
+    verticalSpan: maxY - minY,
+    displacement: Math.sqrt((displacementX * displacementX) + (displacementY * displacementY)),
+    rise: first.y - last.y,
+  };
+}
+
+function joinWithAnd(parts) {
+  if (parts.length === 0) {
+    return '';
+  }
+
+  if (parts.length === 1) {
+    return parts[0];
+  }
+
+  if (parts.length === 2) {
+    return `${parts[0]} and ${parts[1]}`;
+  }
+
+  return `${parts.slice(0, -1).join(', ')}, and ${parts[parts.length - 1]}`;
+}
 function normalizeOverlayPoint(point) {
   if (!point) {
     return null;
@@ -122,6 +207,94 @@ function createFallbackBallTrail(contactPoint) {
   ];
 }
 
+export function validateMotionCapture(tracking = null) {
+  const trackedFrames = readOptionalNumber(tracking?.trackedFrames) ?? 0;
+  const processedFrames = readOptionalNumber(tracking?.processedFrames) ?? 0;
+  const trackingQuality = readOptionalNumber(tracking?.trackingQuality) ?? 0;
+  const peakHandSpeedMph = readOptionalNumber(tracking?.peakHandSpeedMph) ?? 0;
+  const trackedBallFrames = readOptionalNumber(tracking?.ballTrackedFrames) ?? 0;
+  const ballTrackingQuality = readOptionalNumber(tracking?.ballTrackingQuality) ?? 0;
+  const detectedBallSpeedMph = readOptionalNumber(tracking?.detectedBallSpeedMph) ?? 0;
+  const estimatedBallSpeedMph = readOptionalNumber(tracking?.estimatedBallSpeedMph) ?? 0;
+  const releaseFrames = readOptionalNumber(tracking?.releaseFrames) ?? 0;
+  const standingReachInches = readOptionalNumber(tracking?.standingReachInches) ?? 0;
+  const contactReachInches = readOptionalNumber(tracking?.contactReachInches) ?? 0;
+  const verticalLeapInches = Math.max(0, contactReachInches - standingReachInches);
+  const trailStats = measureTrail(tracking?.handTrail || []);
+
+  const missingAthleteTrack =
+    trackedFrames < 4 ||
+    processedFrames < 4 ||
+    trackingQuality < 0.16 ||
+    trailStats.count < 4;
+
+  const missingSwingMotion =
+    trailStats.pathLength < 0.1 ||
+    trailStats.horizontalSpan < 0.045 ||
+    trailStats.verticalSpan < 0.05 ||
+    trailStats.displacement < 0.065 ||
+    trailStats.rise < 0.035 ||
+    peakHandSpeedMph < 8;
+
+  const missingBallFlight =
+    (trackedBallFrames < 2 || ballTrackingQuality < 0.12) &&
+    detectedBallSpeedMph < 18 &&
+    estimatedBallSpeedMph < 20 &&
+    releaseFrames < 1;
+
+  const missingJumpWindow = verticalLeapInches < 1.5;
+
+  const reasons = [];
+  const checklist = [];
+
+  if (missingAthleteTrack) {
+    reasons.push('the athlete was not locked in cleanly');
+    checklist.push({
+      title: 'Keep the whole athlete visible',
+      body: 'Frame the player from set-up through landing so the computer can read the body, shoulder line, and hitting arm cleanly.',
+    });
+  }
+
+  if (missingSwingMotion) {
+    reasons.push('the clip did not show a full attacking swing');
+    checklist.push({
+      title: 'Show one full swing through the zone',
+      body: 'Capture the load, arm acceleration, contact, and follow-through in one side-view rep so the swing path can be scored for hitches.',
+    });
+  }
+
+  if (missingJumpWindow) {
+    reasons.push('the jump window was not visible enough');
+    checklist.push({
+      title: 'Include the jump from floor to landing',
+      body: 'Start before takeoff and keep the feet in frame through landing so Motion Lab can auto-fill the vertical and contact metrics.',
+    });
+  }
+
+  if (missingBallFlight) {
+    reasons.push('the ball was not visible long enough after contact');
+    checklist.push({
+      title: 'Keep the ball visible after contact',
+      body: 'Leave room in front of the hitter so the ball trail and MPH read can be pulled directly from the rep.',
+    });
+  }
+
+  if (reasons.length === 0) {
+    return {
+      isValid: true,
+      title: '',
+      message: '',
+      checklist: [],
+    };
+  }
+
+  return {
+    isValid: false,
+    title: 'Recapture required',
+    message: `Motion Lab could not score this clip because ${joinWithAnd(reasons)}. Re-record one volleyball rep with the full athlete, jump, swing, and early ball flight visible.`,
+    checklist,
+  };
+}
 export function runVideoAnalysis(input, tracking = null) {
   const trackedStandingReachInches = readOptionalNumber(tracking?.standingReachInches);
   const trackedContactReachInches = readOptionalNumber(tracking?.contactReachInches);
@@ -478,3 +651,4 @@ export function runVideoAnalysis(input, tracking = null) {
     },
   };
 }
+

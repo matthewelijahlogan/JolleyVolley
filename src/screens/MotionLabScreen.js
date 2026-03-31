@@ -134,9 +134,13 @@ async function requestAndroidVideoCapturePermissions() {
   return false;
 }
 
-function buildStatusCopy({trackingError, trackingReady, trackingResult, trackingStatus}) {
+function buildStatusCopy({trackingError, trackingPrompt, trackingReady, trackingResult, trackingStatus}) {
   if (trackingStatus === 'running') {
     return 'Reading pose, ball flight, and timing from the active rep.';
+  }
+
+  if (trackingStatus === 'recapture' && trackingPrompt?.message) {
+    return trackingPrompt.message;
   }
 
   if (trackingError) {
@@ -156,6 +160,10 @@ function buildStatusCopy({trackingError, trackingReady, trackingResult, tracking
 function buildStageBadge(trackingError, trackingReady, trackingStatus) {
   if (trackingStatus === 'running') {
     return {label: 'Scanning', tone: 'live'};
+  }
+
+  if (trackingStatus === 'recapture') {
+    return {label: 'Recapture', tone: 'warn'};
   }
 
   if (trackingError) {
@@ -178,6 +186,7 @@ export function MotionLabScreen({
   onSelectVideo,
   selectedVideo,
   trackingError,
+  trackingPrompt,
   trackingResult,
   trackingStatus,
 }) {
@@ -233,7 +242,7 @@ export function MotionLabScreen({
   const ballTrackingApplied = analysisResult?.ballTrackingApplied;
   const hitchPoint = analysisResult?.hitchFrames >= 3 ? handTrail[Math.min(1, handTrail.length - 1)] : null;
   const trackingReady = trackingStatus === 'ready' && trackingResult;
-  const statusCopy = buildStatusCopy({trackingError, trackingReady, trackingResult, trackingStatus});
+  const statusCopy = buildStatusCopy({trackingError, trackingPrompt, trackingReady, trackingResult, trackingStatus});
   const stageBadge = buildStageBadge(trackingError, trackingReady, trackingStatus);
   const playbackTiles = [
     {
@@ -248,7 +257,7 @@ export function MotionLabScreen({
     },
     {
       label: 'Track',
-      value: trackingStatus === 'running' ? 'Live' : trackingReady ? 'Lock' : trackingError ? 'Retry' : 'Idle',
+      value: trackingStatus === 'running' ? 'Live' : trackingReady ? 'Lock' : trackingStatus === 'recapture' ? 'Recap' : trackingError ? 'Retry' : 'Idle',
       detail: trackingReady ? formatPercent(trackingResult?.trackingQuality) : 'One pass',
     },
     {
@@ -267,16 +276,18 @@ export function MotionLabScreen({
   }));
   const adviceTiles = trackingReady
     ? (analysisResult?.advice || []).slice(0, 4)
-    : [
-        {
-          title: 'Run Motion Lab',
-          body: 'Analyze one clip to fill the coaching cards from the AI read.',
-        },
-        {
-          title: 'Keep the whole rep in frame',
-          body: 'A side view with the athlete and ball visible gives the tracker the cleanest pass.',
-        },
-      ];
+    : trackingStatus === 'recapture' && trackingPrompt?.checklist?.length
+      ? [{title: 'Recapture this rep', body: trackingPrompt.message}, ...trackingPrompt.checklist].slice(0, 4)
+      : [
+          {
+            title: 'Run Motion Lab',
+            body: 'Analyze one clip to fill the coaching cards from the AI read.',
+          },
+          {
+            title: 'Keep the whole rep in frame',
+            body: 'A side view with the athlete and ball visible gives the tracker the cleanest pass.',
+          },
+        ];
 
   return (
     <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false} style={styles.safeArea}>
@@ -302,7 +313,7 @@ export function MotionLabScreen({
               <Video controls paused resizeMode="contain" source={{uri: selectedVideo.uri}} style={styles.video} />
               <View pointerEvents="none" style={styles.videoHud}>
                 <View style={styles.videoHudPill}>
-                  <Text style={styles.videoHudText}>{trackingReady ? 'AI Overlay Live' : 'Awaiting AI Pass'}</Text>
+                  <Text style={styles.videoHudText}>{trackingReady ? 'AI Overlay Live' : trackingStatus === 'recapture' ? 'Recapture Needed' : 'Awaiting AI Pass'}</Text>
                 </View>
               </View>
               {trackingReady ? (
@@ -755,3 +766,4 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
 });
+
