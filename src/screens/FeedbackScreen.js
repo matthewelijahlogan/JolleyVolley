@@ -1,4 +1,4 @@
-﻿import {ScrollView, StyleSheet, Text, View} from 'react-native';
+import {ScrollView, StyleSheet, Text, View} from 'react-native';
 
 import {NeonButton} from '../components/NeonButton';
 import {PageHeader} from '../components/PageHeader';
@@ -6,6 +6,7 @@ import {colors, neonShadow, radii, spacing} from '../theme/theme';
 
 export function FeedbackScreen({analysisResult, onGoHome, onOpenScreen, selectedVideo, trackingStatus}) {
   const usingTrackedSession = analysisResult?.trackingApplied;
+  const usingDirectBallTrack = analysisResult?.ballTrackingApplied;
 
   return (
     <ScrollView style={styles.safeArea} contentContainerStyle={styles.content}>
@@ -25,11 +26,20 @@ export function FeedbackScreen({analysisResult, onGoHome, onOpenScreen, selected
             <Text style={styles.sourceTitle}>Current Feedback Source</Text>
             <Text style={styles.sourceCopy}>
               {usingTrackedSession
-                ? 'These cues are being generated from the tracked swing path on the active clip, plus the current session inputs.'
+                ? usingDirectBallTrack
+                  ? 'These cues are being generated from the tracked swing path, the direct tracked ball trail, and the current session inputs from the active clip.'
+                  : 'These cues are being generated from the tracked swing path on the active clip, plus the current session inputs. The ball-speed read will stay on the swing model until the direct ball pass locks on.'
                 : 'These cues are still using the active Motion Lab session inputs. Run Auto Track Swing to feed the tracked hand path into the advice.'}
             </Text>
             <Text style={styles.sourceMeta}>Current clip: {selectedVideo?.fileName || 'No clip selected'}</Text>
             <Text style={styles.sourceMeta}>Tracking status: {trackingStatus === 'running' ? 'Tracking now' : trackingStatus === 'ready' ? 'Tracked clip ready' : 'Manual mode'}</Text>
+            {analysisResult?.ballSpeedSource === 'ball-track' ? (
+              <Text style={styles.sourceMeta}>Ball-speed source: direct ball trail</Text>
+            ) : analysisResult?.ballSpeedSource === 'tracked-estimate' ? (
+              <Text style={styles.sourceMeta}>Ball-speed source: tracked swing estimate</Text>
+            ) : analysisResult?.ballSpeedSource === 'manual-flight' ? (
+              <Text style={styles.sourceMeta}>Ball-speed source: manual flight sample</Text>
+            ) : null}
           </View>
 
           {analysisResult.advice.map(item => (

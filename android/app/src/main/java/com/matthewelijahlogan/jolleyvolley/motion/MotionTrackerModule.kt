@@ -1,6 +1,7 @@
 package com.matthewelijahlogan.jolleyvolley.motion
 
 import android.graphics.Bitmap
+import android.graphics.Color
 import android.media.MediaMetadataRetriever
 import android.net.Uri
 import com.facebook.react.bridge.Arguments
@@ -13,6 +14,7 @@ import com.google.mediapipe.tasks.components.containers.NormalizedLandmark
 import com.google.mediapipe.tasks.core.BaseOptions
 import com.google.mediapipe.tasks.vision.core.RunningMode
 import com.google.mediapipe.tasks.vision.poselandmarker.PoseLandmarker
+import java.util.ArrayDeque
 import java.util.concurrent.Executors
 import kotlin.math.abs
 import kotlin.math.max
@@ -87,11 +89,16 @@ class MotionTrackerModule(private val appContext: ReactApplicationContext) : Rea
         throw IllegalStateException("Not enough visible hand samples were found in the selected clip.")
       }
 
+      val contactSample = swingWindow.minByOrNull { it.y } ?: swingWindow.last()
       val hitchFrames = computeHitchFrames(swingWindow)
       val contactPoint = inferContactPoint(swingWindow)
       val quality = if (processedFrames > 0) selectedSamples.size.toFloat() / processedFrames.toFloat() else 0f
       val peakHandSpeedMph = computePeakHandSpeedMph(swingWindow, aspectRatio)
       val estimatedBallSpeedMph = estimateBallSpeedMph(peakHandSpeedMph, quality)
+      val ballTracking = detectBallTrail(retriever, contactSample, swingWindow, aspectRatio, durationMs, inferenceIntervalMs)
+      val detectedBallSpeedMph = computeBallSpeedMph(ballTracking.samples, aspectRatio, contactSample.shoulderSpan)
+      val detectedBallTravelFeet = computeBallTravelFeet(ballTracking.samples, aspectRatio, contactSample.shoulderSpan)
+      val ballTrackingQuality = computeBallTrackingQuality(ballTracking.samples, ballTracking.expectedFrames)
 
       putString("dominantHand", dominantHand)
       putInt("processedFrames", processedFrames)
@@ -102,7 +109,12 @@ class MotionTrackerModule(private val appContext: ReactApplicationContext) : Rea
       putInt("inferenceIntervalMs", inferenceIntervalMs.toInt())
       putDouble("peakHandSpeedMph", peakHandSpeedMph.toDouble())
       putDouble("estimatedBallSpeedMph", estimatedBallSpeedMph.toDouble())
-      putArray("handTrail", createTrailArray(swingWindow))
+      putInt("ballTrackedFrames", ballTracking.samples.size)
+      putDouble("ballTrackingQuality", ballTrackingQuality.toDouble())
+      putDouble("detectedBallSpeedMph", detectedBallSpeedMph.toDouble())
+      putDouble("detectedBallTravelFeet", detectedBallTravelFeet.toDouble())
+      putArray("handTrail", createHandTrailArray(swingWindow))
+      putArray("ballTrail", createBallTrailArray(ballTracking.samples))
     } finally {
       retriever.release()
       poseLandmarker.close()
@@ -131,6 +143,341 @@ class MotionTrackerModule(private val appContext: ReactApplicationContext) : Rea
       durationMs <= 3500L -> 50L
       durationMs <= 7000L -> 66L
       else -> 80L
+    }
+  }
+
+  private fun detectBallTrail(
+    retriever: MediaMetadataRetriever,
+    contactSample: WristSample,
+    swingWindow: List<WristSample>,
+    aspectRatio: Float,
+    durationMs: Long,
+    inferenceIntervalMs: Long,
+  ): BallTrackingResult {
+    val direction = if (swingWindow.last().x - swingWindow.first().x >= 0f) 1f else -1f
+    val startTimeMs = max(0L, contactSample.timestampMs - max(24L, inferenceIntervalMs / 2L))
+    val endTimeMs = min(durationMs, contactSample.timestampMs + max(260L, inferenceIntervalMs * 7L))
+    val stepMs = max(20L, inferenceIntervalMs / 2L)
+    val expectedFrames = (((endTimeMs - startTimeMs) / stepMs) + 1L).toInt().coerceAtLeast(1)
+
+    val samples = mutableListOf<BallSample>()
+    var previousSample: BallSample? = null
+    var velocityX = direction * 0.06f
+    var velocityY = -0.04f
+    var timestampMs = startTimeMs
+
+    while (timestampMs <= endTimeMs) {
+      val frame = retriever.getFrameAtTime(timestampMs * 1000, MediaMetadataRetriever.OPTION_CLOSEST)
+      if (frame == null) {
+        timestampMs += stepMs
+        continue
+      }
+
+      val scaledFrame = scaleFrameForBallTracking(frame)
+      val expectedX = clamp(
+        if (previousSample != null) {
+          previousSample.x + velocityX
+        } else {
+          contactSample.x + (direction * 0.07f)
+        },
+      )
+      val expectedY = clamp(
+        if (previousSample != null) {
+          previousSample.y + velocityY
+        } else {
+          contactSample.y - 0.03f
+        },
+      )
+
+      val candidate = detectBallCandidate(scaledFrame, expectedX, expectedY, direction, previousSample)
+      if (candidate != null) {
+        val nextSample = BallSample(
+          timestampMs = timestampMs,
+          x = candidate.x,
+          y = candidate.y,
+          radiusNorm = candidate.radiusNorm,
+          diameterUnits = candidate.diameterUnits,
+          score = candidate.score,
+        )
+
+        if (isBallProgressionValid(previousSample, nextSample, contactSample, direction, aspectRatio)) {
+          previousSample?.let { prior ->
+            velocityX = (nextSample.x - prior.x) * 1.08f
+            velocityY = (nextSample.y - prior.y) * 1.08f
+          }
+          samples.add(nextSample)
+          previousSample = nextSample
+        }
+      }
+
+      if (scaledFrame != frame) {
+        scaledFrame.recycle()
+      }
+      frame.recycle()
+      timestampMs += stepMs
+    }
+
+    return BallTrackingResult(
+      samples = refineBallSamples(samples, contactSample, direction, aspectRatio),
+      expectedFrames = expectedFrames,
+    )
+  }
+
+  private fun scaleFrameForBallTracking(frame: Bitmap): Bitmap {
+    if (frame.width <= BALL_TRACK_TARGET_WIDTH) {
+      return frame
+    }
+
+    val scaledHeight = max(1, (frame.height.toFloat() * (BALL_TRACK_TARGET_WIDTH.toFloat() / frame.width.toFloat())).toInt())
+    return Bitmap.createScaledBitmap(frame, BALL_TRACK_TARGET_WIDTH, scaledHeight, true)
+  }
+
+  private fun detectBallCandidate(
+    frame: Bitmap,
+    expectedX: Float,
+    expectedY: Float,
+    direction: Float,
+    previousSample: BallSample?,
+  ): BallCandidate? {
+    val width = frame.width
+    val height = frame.height
+    val frameAspectRatio = if (height > 0) width.toFloat() / height.toFloat() else 1f
+    val searchRadiusX = previousSample?.let { max(0.11f, it.radiusNorm * 5.5f) } ?: 0.22f
+    val searchRadiusY = previousSample?.let { max(0.10f, it.radiusNorm * 4.5f) } ?: 0.18f
+    val minX = max(0, ((expectedX - searchRadiusX) * width).toInt())
+    val maxX = min(width - 1, ((expectedX + searchRadiusX) * width).toInt())
+    val minY = max(0, ((expectedY - searchRadiusY) * height).toInt())
+    val maxY = min(height - 1, ((expectedY + searchRadiusY) * height).toInt())
+
+    val visited = BooleanArray(width * height)
+    var bestCandidate: BallCandidate? = null
+
+    for (y in minY..maxY) {
+      for (x in minX..maxX) {
+        val index = (y * width) + x
+        if (visited[index]) {
+          continue
+        }
+
+        val color = frame.getPixel(x, y)
+        if (!isBallPixel(color)) {
+          visited[index] = true
+          continue
+        }
+
+        val queue = ArrayDeque<Int>()
+        queue.add(index)
+        visited[index] = true
+
+        var area = 0
+        var sumX = 0f
+        var sumY = 0f
+        var brightnessSum = 0f
+        var clusterMinX = x
+        var clusterMaxX = x
+        var clusterMinY = y
+        var clusterMaxY = y
+
+        while (!queue.isEmpty()) {
+          val current = queue.removeFirst()
+          val currentX = current % width
+          val currentY = current / width
+          val currentColor = frame.getPixel(currentX, currentY)
+
+          area += 1
+          sumX += currentX.toFloat()
+          sumY += currentY.toFloat()
+          brightnessSum += ((Color.red(currentColor) + Color.green(currentColor) + Color.blue(currentColor)) / 3f)
+          clusterMinX = min(clusterMinX, currentX)
+          clusterMaxX = max(clusterMaxX, currentX)
+          clusterMinY = min(clusterMinY, currentY)
+          clusterMaxY = max(clusterMaxY, currentY)
+
+          for (neighborY in max(minY, currentY - 1)..min(maxY, currentY + 1)) {
+            for (neighborX in max(minX, currentX - 1)..min(maxX, currentX + 1)) {
+              val neighborIndex = (neighborY * width) + neighborX
+              if (visited[neighborIndex]) {
+                continue
+              }
+
+              visited[neighborIndex] = true
+              if (isBallPixel(frame.getPixel(neighborX, neighborY))) {
+                queue.add(neighborIndex)
+              }
+            }
+          }
+        }
+
+        if (area < 6 || area > 240) {
+          continue
+        }
+
+        val boxWidth = clusterMaxX - clusterMinX + 1
+        val boxHeight = clusterMaxY - clusterMinY + 1
+        if (boxWidth < 2 || boxHeight < 2) {
+          continue
+        }
+
+        val centroidX = (sumX / area.toFloat()) / width.toFloat()
+        val centroidY = (sumY / area.toFloat()) / height.toFloat()
+        val radiusNorm = max(boxWidth.toFloat() / width.toFloat(), boxHeight.toFloat() / height.toFloat()) / 2f
+        val diameterUnits = max(
+          (boxWidth.toFloat() / width.toFloat()) * frameAspectRatio,
+          boxHeight.toFloat() / height.toFloat(),
+        )
+        val brightnessScore = min(1f, (brightnessSum / area.toFloat()) / 255f)
+        val circularityScore = 1f - min(1f, abs(boxWidth - boxHeight).toFloat() / max(boxWidth, boxHeight).toFloat())
+        val distanceScore = 1f - min(1f, aspectDistance(centroidX, centroidY, expectedX, expectedY, frameAspectRatio) / 0.30f)
+        val expectedDiameter = previousSample?.diameterUnits ?: 0.07f
+        val sizeScore = 1f - min(1f, abs(diameterUnits - expectedDiameter) / max(0.03f, expectedDiameter))
+        val forwardScore = if ((centroidX - expectedX) * direction >= -0.08f) 1f else 0.55f
+        val totalScore = (distanceScore * 0.4f) + (circularityScore * 0.18f) + (brightnessScore * 0.18f) + (sizeScore * 0.14f) + (forwardScore * 0.10f)
+
+        if (totalScore >= 0.34f && (bestCandidate == null || totalScore > bestCandidate.score)) {
+          bestCandidate = BallCandidate(
+            x = centroidX,
+            y = centroidY,
+            radiusNorm = radiusNorm,
+            diameterUnits = diameterUnits,
+            score = totalScore,
+          )
+        }
+      }
+    }
+
+    return bestCandidate
+  }
+
+  private fun isBallPixel(color: Int): Boolean {
+    val red = Color.red(color)
+    val green = Color.green(color)
+    val blue = Color.blue(color)
+    val brightness = (red + green + blue) / 3
+    val maxChannel = max(red, max(green, blue))
+    val minChannel = min(red, min(green, blue))
+    val spread = maxChannel - minChannel
+    val neutralLight = brightness >= 158 && maxChannel >= 180 && spread <= 120
+    val warmLight = brightness >= 150 && red >= 160 && green >= 140 && blue >= 95
+    return neutralLight || warmLight
+  }
+
+  
+  private fun isBallProgressionValid(
+    previousSample: BallSample?,
+    nextSample: BallSample,
+    contactSample: WristSample,
+    direction: Float,
+    aspectRatio: Float,
+  ): Boolean {
+    if (previousSample == null) {
+      val nearContact = (nextSample.x - contactSample.x) * direction >= -0.08f
+      val nearHeight = nextSample.y <= contactSample.y + 0.18f
+      return nearContact && nearHeight
+    }
+
+    val motion = aspectDistance(previousSample.x, previousSample.y, nextSample.x, nextSample.y, aspectRatio)
+    if (motion < 0.006f || motion > 0.42f) {
+      return false
+    }
+
+    val progressesForward = (nextSample.x - previousSample.x) * direction >= -0.04f
+    val staysNearFlightBand = nextSample.y <= previousSample.y + 0.10f
+    return progressesForward && staysNearFlightBand
+  }
+  private fun refineBallSamples(
+    samples: List<BallSample>,
+    contactSample: WristSample,
+    direction: Float,
+    aspectRatio: Float,
+  ): List<BallSample> {
+    if (samples.size < 2) {
+      return emptyList()
+    }
+
+    val orderedSamples = samples.sortedBy { it.timestampMs }
+    val refined = mutableListOf<BallSample>()
+
+    orderedSamples.forEach { sample ->
+      val previous = refined.lastOrNull()
+      if (previous == null) {
+        val isNearContactWindow = (sample.x - contactSample.x) * direction >= -0.08f && sample.y <= contactSample.y + 0.18f
+        if (isNearContactWindow) {
+          refined.add(sample)
+        }
+      } else {
+        val deltaTime = sample.timestampMs - previous.timestampMs
+        val motion = aspectDistance(previous.x, previous.y, sample.x, sample.y, aspectRatio)
+        val progressesForward = (sample.x - previous.x) * direction >= -0.03f
+        if (deltaTime >= 15L && motion >= 0.006f && progressesForward) {
+          refined.add(sample)
+        }
+      }
+    }
+
+    return if (refined.size >= 2) refined.take(6) else emptyList()
+  }
+
+  private fun computeBallTrackingQuality(samples: List<BallSample>, expectedFrames: Int): Float {
+    if (samples.isEmpty()) {
+      return 0f
+    }
+
+    val coverageScore = min(1f, samples.size.toFloat() / expectedFrames.toFloat())
+    val confidenceScore = samples.map { it.score }.average().toFloat().coerceIn(0f, 1f)
+    var continuityHits = 0
+    for (index in 1 until samples.size) {
+      if (samples[index].timestampMs - samples[index - 1].timestampMs <= 120L) {
+        continuityHits += 1
+      }
+    }
+    val continuityScore = if (samples.size <= 1) 0f else continuityHits.toFloat() / (samples.size - 1).toFloat()
+
+    return ((coverageScore * 0.45f) + (confidenceScore * 0.4f) + (continuityScore * 0.15f)).coerceIn(0f, 1f)
+  }
+
+  private fun computeBallSpeedMph(samples: List<BallSample>, aspectRatio: Float, contactShoulderSpan: Float): Float {
+    if (samples.size < 2) {
+      return 0f
+    }
+
+    val feetPerUnit = computeFeetPerUnit(samples, contactShoulderSpan)
+    val speeds = mutableListOf<Float>()
+
+    for (index in 1 until samples.size) {
+      val first = samples[index - 1]
+      val second = samples[index]
+      val deltaTimeSeconds = max(1L, second.timestampMs - first.timestampMs).toFloat() / 1000f
+      val motionUnits = aspectDistance(first.x, first.y, second.x, second.y, aspectRatio)
+      val feetPerSecond = (motionUnits * feetPerUnit) / deltaTimeSeconds
+      if (feetPerSecond > 0f) {
+        speeds.add(feetPerSecond / FEET_PER_MPH_SECOND)
+      }
+    }
+
+    if (speeds.isEmpty()) {
+      return 0f
+    }
+
+    val launchWindow = speeds.take(3).sortedDescending().take(2)
+    return min(80f, max(0f, launchWindow.average().toFloat()))
+  }
+
+  private fun computeBallTravelFeet(samples: List<BallSample>, aspectRatio: Float, contactShoulderSpan: Float): Float {
+    if (samples.size < 2) {
+      return 0f
+    }
+
+    val feetPerUnit = computeFeetPerUnit(samples, contactShoulderSpan)
+    val distanceUnits = aspectDistance(samples.first().x, samples.first().y, samples.last().x, samples.last().y, aspectRatio)
+    return max(0f, distanceUnits * feetPerUnit)
+  }
+
+  private fun computeFeetPerUnit(samples: List<BallSample>, contactShoulderSpan: Float): Float {
+    val usableDiameters = samples.map { it.diameterUnits }.filter { it in 0.012f..0.18f }
+    return if (usableDiameters.isNotEmpty()) {
+      VOLLEYBALL_DIAMETER_FEET / usableDiameters.average().toFloat()
+    } else {
+      ASSUMED_SHOULDER_WIDTH_FEET / max(0.04f, contactShoulderSpan)
     }
   }
 
@@ -344,7 +691,17 @@ class MotionTrackerModule(private val appContext: ReactApplicationContext) : Rea
     return min(80f, max(18f, estimate))
   }
 
-  private fun createTrailArray(samples: List<WristSample>) = Arguments.createArray().apply {
+  private fun createHandTrailArray(samples: List<WristSample>) = Arguments.createArray().apply {
+    samples.forEach { sample ->
+      pushMap(Arguments.createMap().apply {
+        putDouble("x", clamp(sample.x).toDouble())
+        putDouble("y", clamp(sample.y).toDouble())
+        putDouble("timestampMs", sample.timestampMs.toDouble())
+      })
+    }
+  }
+
+  private fun createBallTrailArray(samples: List<BallSample>) = Arguments.createArray().apply {
     samples.forEach { sample ->
       pushMap(Arguments.createMap().apply {
         putDouble("x", clamp(sample.x).toDouble())
@@ -384,6 +741,28 @@ class MotionTrackerModule(private val appContext: ReactApplicationContext) : Rea
     val shoulderSpan: Float,
   )
 
+  private data class BallCandidate(
+    val x: Float,
+    val y: Float,
+    val radiusNorm: Float,
+    val diameterUnits: Float,
+    val score: Float,
+  )
+
+  private data class BallSample(
+    val timestampMs: Long,
+    val x: Float,
+    val y: Float,
+    val radiusNorm: Float,
+    val diameterUnits: Float,
+    val score: Float,
+  )
+
+  private data class BallTrackingResult(
+    val samples: List<BallSample>,
+    val expectedFrames: Int,
+  )
+
   companion object {
     private const val LEFT_SHOULDER_INDEX = 11
     private const val RIGHT_SHOULDER_INDEX = 12
@@ -395,5 +774,7 @@ class MotionTrackerModule(private val appContext: ReactApplicationContext) : Rea
     private const val FEET_PER_MPH_SECOND = 1.46667f
     private const val ASSUMED_SHOULDER_WIDTH_FEET = 1.35f
     private const val BALL_SPEED_TRANSFER_MULTIPLIER = 2.08f
+    private const val VOLLEYBALL_DIAMETER_FEET = 0.688f
+    private const val BALL_TRACK_TARGET_WIDTH = 220
   }
 }

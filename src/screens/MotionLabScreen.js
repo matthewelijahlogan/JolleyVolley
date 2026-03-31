@@ -99,7 +99,7 @@ export function MotionLabScreen({
   };
 
   const previewAssessments = (analysisResult?.assessments || [])
-    .filter(item => ['Swing Tracking', 'Ball Speed', 'Hitch Frames', 'Contact Point'].includes(item.label))
+    .filter(item => ['Swing Tracking', 'Ball Tracking', 'Ball Speed', 'Hitch Frames'].includes(item.label))
     .slice(0, 4);
   const trackingReady = trackingStatus === 'ready' && trackingResult;
 
@@ -152,16 +152,21 @@ export function MotionLabScreen({
       <View style={styles.trackerCard}>
         <Text style={styles.sectionLabel}>Swing Tracker Status</Text>
         {trackingStatus === 'running' ? (
-          <Text style={styles.trackerCopy}>The app is sampling the selected video and building the current hand path through the zone.</Text>
+          <Text style={styles.trackerCopy}>The app is sampling the selected video, building the hand path, and looking for the ball flight after contact.</Text>
         ) : trackingReady ? (
           <>
             <Text style={styles.trackerTitle}>Tracked {trackingResult.dominantHand} hand</Text>
             <Text style={styles.trackerCopy}>
-              {trackingResult.trackedFrames}/{trackingResult.processedFrames} sampled frames locked the swing path. Hitch frames, contact timing, and the current speed estimate have been fed into the active session.
+              {trackingResult.trackedFrames}/{trackingResult.processedFrames} sampled frames locked the swing path. Hitch frames, contact timing, and the best available ball-speed read have been fed into the active session.
             </Text>
             <Text style={styles.trackerMeta}>Tracking quality: {(Number(trackingResult.trackingQuality || 0) * 100).toFixed(0)}%</Text>
-            {Number(trackingResult.estimatedBallSpeedMph || 0) > 0 ? (
-              <Text style={styles.trackerMeta}>Tracked ball-speed estimate: {Number(trackingResult.estimatedBallSpeedMph).toFixed(1)} MPH</Text>
+            {Number(trackingResult.ballTrackedFrames || 0) > 1 ? (
+              <Text style={styles.trackerMeta}>Direct ball trail: {Number(trackingResult.ballTrackedFrames).toFixed(0)} frames | quality {(Number(trackingResult.ballTrackingQuality || 0) * 100).toFixed(0)}%</Text>
+            ) : null}
+            {Number(trackingResult.detectedBallSpeedMph || 0) > 0 ? (
+              <Text style={styles.trackerMeta}>Direct ball speed: {Number(trackingResult.detectedBallSpeedMph).toFixed(1)} MPH</Text>
+            ) : Number(trackingResult.estimatedBallSpeedMph || 0) > 0 ? (
+              <Text style={styles.trackerMeta}>Tracked speed estimate: {Number(trackingResult.estimatedBallSpeedMph).toFixed(1)} MPH</Text>
             ) : null}
           </>
         ) : trackingError ? (

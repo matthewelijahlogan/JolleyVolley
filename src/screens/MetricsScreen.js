@@ -85,7 +85,7 @@ export function MetricsScreen({analysisInput, analysisResult, onGoHome, onOpenSc
               value={`${analysisResult.verticalLeapInches} in`}
             />
             <MetricTile
-              detail={analysisResult.ballSpeedSource === 'tracked-estimate' ? 'Auto-estimated from the tracked swing model' : 'Ball travel distance over release time'}
+              detail={analysisResult.ballSpeedSource === 'ball-track' ? 'Detected directly from the tracked ball trail' : analysisResult.ballSpeedSource === 'tracked-estimate' ? 'Auto-estimated from the tracked swing model' : 'Ball travel distance over release time'}
               label="Ball Speed"
               value={`${analysisResult.ballSpeedMph} MPH`}
             />
@@ -125,8 +125,10 @@ export function MetricsScreen({analysisInput, analysisResult, onGoHome, onOpenSc
             <Text style={styles.formulaCopy}>Contact point: {analysisInput.contactPoint}</Text>
             <Text style={styles.formulaCopy}>Landing stability: {analysisInput.landingStability}</Text>
             <Text style={styles.formulaCopy}>Current clip: {selectedVideo?.fileName || 'None selected'}</Text>
-            <Text style={styles.formulaCopy}>Ball speed source: {analysisResult.ballSpeedSource === 'tracked-estimate' ? 'Tracked swing model' : analysisResult.ballSpeedSource === 'manual-flight' ? 'Manual ball-flight sample' : 'Pending'}</Text>
+            <Text style={styles.formulaCopy}>Ball speed source: {analysisResult.ballSpeedSource === 'ball-track' ? 'Direct ball trail' : analysisResult.ballSpeedSource === 'tracked-estimate' ? 'Tracked swing model' : analysisResult.ballSpeedSource === 'manual-flight' ? 'Manual ball-flight sample' : 'Pending'}</Text>
             <Text style={styles.formulaCopy}>Peak hand speed: {analysisResult.peakHandSpeedMph || '--'} MPH</Text>
+            <Text style={styles.formulaCopy}>Tracked ball frames: {analysisResult.trackedBallFrames || '--'}</Text>
+            <Text style={styles.formulaCopy}>Ball tracking quality: {analysisResult.ballTrackingApplied ? `${Math.round(Number(analysisResult.ballTrackingQuality || 0) * 100)}%` : '--'}</Text>
             <Text style={styles.formulaCopy}>Tracking status: {trackingStatus === 'running' ? 'Tracking now' : trackingStatus === 'ready' ? 'Tracked clip ready' : 'Manual mode'}</Text>
           </View>
         </>

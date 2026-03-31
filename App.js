@@ -86,13 +86,7 @@ export default function App() {
   };
 
   const goHome = () => {
-    setScreenStack(current => {
-      if (current[current.length - 1] === HOME_SCREEN) {
-        return current;
-      }
-
-      return [...current, HOME_SCREEN];
-    });
+    setScreenStack([HOME_SCREEN]);
   };
 
   const sharedScreenProps = useMemo(
@@ -131,6 +125,9 @@ export default function App() {
         ...current,
         hitchFrames: Number.isFinite(result?.hitchFrames) ? `${result.hitchFrames}` : current.hitchFrames,
         contactPoint: result?.contactPoint || current.contactPoint,
+        ballTravelFeet: Number.isFinite(result?.detectedBallTravelFeet) && result.detectedBallTravelFeet > 0
+          ? `${Number(result.detectedBallTravelFeet).toFixed(1)}`
+          : current.ballTravelFeet,
       }));
     } catch (error) {
       setTrackingResult(null);

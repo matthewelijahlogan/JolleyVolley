@@ -30,6 +30,7 @@ function TrackerStat({label, value}) {
 export function PlaybackScreen({analysisResult, onGoHome, onOpenScreen, selectedVideo, trackingStatus}) {
   const handTrail = analysisResult?.overlayProfile?.handTrail || [];
   const ballTrail = analysisResult?.overlayProfile?.ballTrail || [];
+  const ballTrackingApplied = analysisResult?.ballTrackingApplied;
   const hitchPoint = analysisResult?.hitchFrames >= 3 ? handTrail[Math.min(1, handTrail.length - 1)] : null;
 
   return (
@@ -41,7 +42,9 @@ export function PlaybackScreen({analysisResult, onGoHome, onOpenScreen, selected
         <Text style={styles.cardTitle}>Swing Tracker</Text>
         <Text style={styles.cardCopy}>
           {analysisResult?.trackingApplied
-            ? 'This view is using the tracked hand path pulled from the current clip and feeding the same result back into the Motion Lab session.'
+            ? ballTrackingApplied
+              ? 'This view is using the tracked hand path and the direct tracked ball trail pulled from the current clip.'
+              : 'This view is using the tracked hand path pulled from the current clip. The ball trail will stay simulated until the direct ball pass locks on.'
             : 'This view is using the current Motion Lab session profile. Run Auto Track Swing in the recorder to replace the hand path with a tracked clip sample.'}
         </Text>
       </View>
@@ -78,9 +81,12 @@ export function PlaybackScreen({analysisResult, onGoHome, onOpenScreen, selected
         <>
           <View style={styles.statGrid}>
             <TrackerStat label="Tracking" value={analysisResult.trackingApplied ? 'Auto' : 'Manual'} />
-            <TrackerStat label="Hitch Severity" value={analysisResult.hitchSeverity} />
+            <TrackerStat label="Ball Trail" value={ballTrackingApplied ? 'Direct' : 'Simulated'} />
             <TrackerStat label="Hitch Frames" value={`${analysisResult.hitchFrames}`} />
-            <TrackerStat label="Contact Point" value={analysisResult.contactPoint} />
+            <TrackerStat
+              label="MPH Source"
+              value={analysisResult.ballSpeedSource === 'ball-track' ? 'Ball' : analysisResult.ballSpeedSource === 'tracked-estimate' ? 'Hand' : analysisResult.ballSpeedSource === 'manual-flight' ? 'Manual' : 'Pending'}
+            />
           </View>
 
           <View style={styles.infoCard}>
@@ -94,7 +100,9 @@ export function PlaybackScreen({analysisResult, onGoHome, onOpenScreen, selected
             </Text>
             <Text style={styles.infoMeta}>
               {analysisResult.trackingApplied
-                ? `${analysisResult.dominantHand} hand tracked | ${analysisResult.trackedFrames}/${analysisResult.processedFrames} sampled frames`
+                ? ballTrackingApplied
+                  ? `${analysisResult.dominantHand} hand tracked | ${analysisResult.trackedBallFrames} ball frames locked | ${analysisResult.ballSpeedMph} MPH direct read`
+                  : `${analysisResult.dominantHand} hand tracked | ${analysisResult.trackedFrames}/${analysisResult.processedFrames} sampled frames | ball trail fallback`
                 : trackingStatus === 'running'
                   ? 'Swing tracking is still processing the current clip.'
                   : 'This overlay is still using the manual session profile.'}
