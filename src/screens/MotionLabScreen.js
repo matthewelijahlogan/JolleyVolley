@@ -24,6 +24,17 @@ function HitchFlag({style}) {
   );
 }
 
+function SectionBar({meta, title}) {
+  return (
+    <View style={styles.sectionBar}>
+      <Text style={styles.sectionTitle}>{title}</Text>
+      <View style={styles.sectionMetaPill}>
+        <Text style={styles.sectionMetaText}>{meta}</Text>
+      </View>
+    </View>
+  );
+}
+
 function PlaybackSettingTile({detail, disabled = false, label, onPress, value}) {
   const content = (
     <>
@@ -46,21 +57,30 @@ function PlaybackSettingTile({detail, disabled = false, label, onPress, value}) 
 
 function MetricLinkTile({detail, label, onPress, value}) {
   return (
-    <Pressable onPress={onPress} style={({pressed}) => [styles.metricTile, pressed && styles.metricTilePressed]}>
-      <Text style={styles.metricLabel}>{label}</Text>
-      <Text style={styles.metricValue}>{value}</Text>
-      <Text style={styles.metricDetail}>{detail}</Text>
-      <Text style={styles.metricLink}>Open history</Text>
+    <Pressable onPress={onPress} style={({pressed}) => [styles.gridTile, styles.metricTile, pressed && styles.gridTilePressed]}>
+      <View style={styles.gridTileTopRow}>
+        <Text style={styles.gridTileLabel}>{label}</Text>
+        <View style={styles.historyPill}>
+          <Text style={styles.historyPillText}>History</Text>
+        </View>
+      </View>
+      <Text style={styles.gridTileValue}>{value}</Text>
+      <Text style={styles.gridTileDetail}>{detail}</Text>
     </Pressable>
   );
 }
 
 function AdviceTile({item}) {
   return (
-    <View style={styles.adviceTile}>
-      <Text style={styles.adviceLabel}>Advice</Text>
+    <View style={[styles.gridTile, styles.adviceTile]}>
+      <View style={styles.gridTileTopRow}>
+        <Text style={styles.gridTileLabel}>Cue</Text>
+        <View style={styles.cuePill}>
+          <Text style={styles.cuePillText}>Coach</Text>
+        </View>
+      </View>
       <Text style={styles.adviceTitle}>{item.title}</Text>
-      <Text style={styles.adviceBody}>{item.body}</Text>
+      <Text style={styles.gridTileDetail}>{item.body}</Text>
     </View>
   );
 }
@@ -127,10 +147,26 @@ function buildStatusCopy({trackingError, trackingReady, trackingResult, tracking
     const ballFrames = Number(trackingResult?.ballTrackedFrames || 0);
     return ballFrames > 1
       ? `Swing and ball tracking locked. Ball trail quality ${formatPercent(trackingResult?.ballTrackingQuality)}.`
-      : `Swing path locked. Ball trail is still building from the current clip.`;
+      : 'Swing path locked. Ball trail is still building from this clip.';
   }
 
   return 'Load one rep, run one pass, and review the current snapshot below.';
+}
+
+function buildStageBadge(trackingError, trackingReady, trackingStatus) {
+  if (trackingStatus === 'running') {
+    return {label: 'Scanning', tone: 'live'};
+  }
+
+  if (trackingError) {
+    return {label: 'Retry', tone: 'warn'};
+  }
+
+  if (trackingReady) {
+    return {label: 'Locked', tone: 'good'};
+  }
+
+  return {label: 'Ready', tone: 'idle'};
 }
 
 export function MotionLabScreen({
@@ -198,26 +234,27 @@ export function MotionLabScreen({
   const hitchPoint = analysisResult?.hitchFrames >= 3 ? handTrail[Math.min(1, handTrail.length - 1)] : null;
   const trackingReady = trackingStatus === 'ready' && trackingResult;
   const statusCopy = buildStatusCopy({trackingError, trackingReady, trackingResult, trackingStatus});
+  const stageBadge = buildStageBadge(trackingError, trackingReady, trackingStatus);
   const playbackTiles = [
     {
+      label: 'Clip',
+      value: selectedVideo?.uri ? 'Ready' : 'Empty',
+      detail: selectedVideo?.duration ? `${selectedVideo.duration}s loaded` : 'Load rep',
+    },
+    {
+      label: 'Trail',
+      value: trackingReady ? (ballTrackingApplied ? 'Dual' : 'Hand') : 'Idle',
+      detail: trackingReady ? 'Overlay live' : 'Run pass',
+    },
+    {
+      label: 'Track',
+      value: trackingStatus === 'running' ? 'Live' : trackingReady ? 'Lock' : trackingError ? 'Retry' : 'Idle',
+      detail: trackingReady ? formatPercent(trackingResult?.trackingQuality) : 'One pass',
+    },
+    {
       label: 'Playback',
-      value: selectedVideo?.uri ? 'Clip Ready' : 'No Clip',
-      detail: selectedVideo?.duration ? `${selectedVideo.duration}s loaded` : 'Record or import a rep',
-    },
-    {
-      label: 'Overlay',
-      value: trackingReady ? (ballTrackingApplied ? 'Hand + Ball' : 'Hand Trail') : 'Awaiting AI',
-      detail: trackingReady ? 'Mounted over the current rep' : 'Analyze the clip to mount the trail',
-    },
-    {
-      label: 'Tracking',
-      value: trackingStatus === 'running' ? 'Running' : trackingReady ? 'Locked' : trackingError ? 'Retry' : 'Idle',
-      detail: trackingReady ? `Swing ${formatPercent(trackingResult?.trackingQuality)}` : 'One pass fills the metrics',
-    },
-    {
-      label: 'Playback View',
-      value: selectedVideo?.uri ? 'Open' : 'Disabled',
-      detail: selectedVideo?.uri ? 'Launch the full playback page' : 'Load a rep first',
+      value: selectedVideo?.uri ? 'Open' : 'Off',
+      detail: selectedVideo?.uri ? 'Full view' : 'Need rep',
       onPress: selectedVideo?.uri ? () => onOpenScreen('neon-playback') : undefined,
       disabled: !selectedVideo?.uri,
     },
@@ -246,15 +283,28 @@ export function MotionLabScreen({
       <PageHeader onHomePress={onGoHome} />
 
       <View style={styles.stageCard}>
+        <View pointerEvents="none" style={styles.stageGlowPrimary} />
+        <View pointerEvents="none" style={styles.stageGlowSecondary} />
+
         <View style={styles.stageHeader}>
-          <Text style={styles.stageTitle}>Motion Lab</Text>
-          <Text style={styles.stageMeta}>{selectedVideo?.fileName || 'No active clip'}</Text>
+          <View style={styles.stageHeaderTextWrap}>
+            <Text style={styles.stageTitle}>Motion Lab</Text>
+            <Text numberOfLines={1} style={styles.stageMeta}>{selectedVideo?.fileName || 'No active clip loaded'}</Text>
+          </View>
+          <View style={[styles.stageBadge, stageBadge.tone === 'good' && styles.stageBadgeGood, stageBadge.tone === 'live' && styles.stageBadgeLive, stageBadge.tone === 'warn' && styles.stageBadgeWarn]}>
+            <Text style={styles.stageBadgeText}>{stageBadge.label}</Text>
+          </View>
         </View>
 
         <View style={styles.videoFrame}>
           {selectedVideo?.uri ? (
             <>
               <Video controls paused resizeMode="contain" source={{uri: selectedVideo.uri}} style={styles.video} />
+              <View pointerEvents="none" style={styles.videoHud}>
+                <View style={styles.videoHudPill}>
+                  <Text style={styles.videoHudText}>{trackingReady ? 'AI Overlay Live' : 'Awaiting AI Pass'}</Text>
+                </View>
+              </View>
               {trackingReady ? (
                 <View pointerEvents="none" style={styles.overlayLayer}>
                   <View style={styles.swingLane} />
@@ -285,16 +335,8 @@ export function MotionLabScreen({
             <NeonButton label="Import" onPress={handleLibraryLaunch} tone="secondary" />
           </View>
           <View style={styles.actionButtonWrap}>
-            <NeonButton
-              label={trackingStatus === 'running' ? 'Analyzing...' : 'Analyze'}
-              onPress={onAnalyzeRep}
-            />
+            <NeonButton label={trackingStatus === 'running' ? 'Scanning' : 'Run Pass'} onPress={onAnalyzeRep} />
           </View>
-        </View>
-
-        <View style={styles.statusStrip}>
-          <Text style={styles.statusLabel}>Playback Settings</Text>
-          <Text style={styles.statusCopy}>{statusCopy}</Text>
         </View>
 
         <View style={styles.settingGrid}>
@@ -309,10 +351,12 @@ export function MotionLabScreen({
             />
           ))}
         </View>
+
+        <Text style={styles.stageFootnote}>{statusCopy}</Text>
       </View>
 
-      <Text style={styles.sectionTitle}>Current Metrics</Text>
-      <View style={styles.metricGrid}>
+      <SectionBar meta={`${metricTiles.length} live`} title="Current Metrics" />
+      <View style={styles.cardGrid}>
         {metricTiles.map(item => (
           <MetricLinkTile
             detail={item.detail}
@@ -324,8 +368,8 @@ export function MotionLabScreen({
         ))}
       </View>
 
-      <Text style={styles.sectionTitle}>Coaching Advice</Text>
-      <View style={styles.metricGrid}>
+      <SectionBar meta={`${adviceTiles.length} cues`} title="Coaching Advice" />
+      <View style={styles.cardGrid}>
         {adviceTiles.map((item, index) => (
           <AdviceTile item={item} key={`${item.title}-${index}`} />
         ))}
@@ -340,69 +384,145 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background,
   },
   content: {
-    padding: spacing.lg,
+    paddingHorizontal: spacing.md,
     paddingTop: spacing.xl,
     paddingBottom: spacing.xxl,
   },
   stageCard: {
-    borderRadius: radii.lg,
+    position: 'relative',
+    overflow: 'hidden',
+    borderRadius: 30,
     borderWidth: 1,
-    borderColor: colors.stroke,
-    backgroundColor: colors.surface,
-    padding: spacing.lg,
-    marginBottom: spacing.lg,
+    borderColor: 'rgba(255, 110, 209, 0.28)',
+    backgroundColor: 'rgba(18, 7, 28, 0.94)',
+    padding: spacing.md,
+    marginBottom: spacing.md,
     ...neonShadow,
   },
+  stageGlowPrimary: {
+    position: 'absolute',
+    top: -70,
+    right: -30,
+    width: 180,
+    height: 180,
+    borderRadius: 999,
+    backgroundColor: 'rgba(255, 63, 164, 0.18)',
+  },
+  stageGlowSecondary: {
+    position: 'absolute',
+    bottom: -90,
+    left: -50,
+    width: 200,
+    height: 200,
+    borderRadius: 999,
+    backgroundColor: 'rgba(126, 249, 255, 0.1)',
+  },
   stageHeader: {
-    marginBottom: spacing.md,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    gap: spacing.sm,
+    marginBottom: spacing.sm,
+  },
+  stageHeaderTextWrap: {
+    flex: 1,
   },
   stageTitle: {
     color: colors.text,
     fontFamily: 'Bangers',
-    fontSize: 36,
-    letterSpacing: 0.8,
-    marginBottom: 4,
+    fontSize: 38,
+    letterSpacing: 0.9,
+    marginBottom: 2,
   },
   stageMeta: {
     color: colors.textMuted,
-    fontSize: 13,
-    lineHeight: 19,
+    fontSize: 12,
+    lineHeight: 18,
+    textTransform: 'uppercase',
+    letterSpacing: 0.9,
+  },
+  stageBadge: {
+    borderRadius: radii.round,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 110, 209, 0.28)',
+    backgroundColor: 'rgba(255, 63, 164, 0.12)',
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+  },
+  stageBadgeGood: {
+    borderColor: 'rgba(89, 255, 168, 0.34)',
+    backgroundColor: 'rgba(89, 255, 168, 0.12)',
+  },
+  stageBadgeLive: {
+    borderColor: 'rgba(126, 249, 255, 0.34)',
+    backgroundColor: 'rgba(126, 249, 255, 0.14)',
+  },
+  stageBadgeWarn: {
+    borderColor: 'rgba(255, 199, 102, 0.34)',
+    backgroundColor: 'rgba(255, 199, 102, 0.14)',
+  },
+  stageBadgeText: {
+    color: colors.text,
+    fontSize: 11,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    letterSpacing: 1.1,
   },
   videoFrame: {
-    height: 300,
-    borderRadius: radii.md,
+    height: 360,
+    borderRadius: 24,
     overflow: 'hidden',
     borderWidth: 1,
-    borderColor: 'rgba(255, 110, 209, 0.24)',
+    borderColor: 'rgba(255, 110, 209, 0.22)',
     backgroundColor: '#050109',
-    marginBottom: spacing.md,
+    marginBottom: spacing.sm,
   },
   video: {
     flex: 1,
     backgroundColor: '#050109',
+  },
+  videoHud: {
+    position: 'absolute',
+    top: 12,
+    left: 12,
+  },
+  videoHudPill: {
+    borderRadius: radii.round,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 245, 251, 0.16)',
+    backgroundColor: 'rgba(9, 2, 15, 0.76)',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+  },
+  videoHudText: {
+    color: colors.text,
+    fontSize: 11,
+    fontWeight: '700',
+    letterSpacing: 0.8,
+    textTransform: 'uppercase',
   },
   overlayLayer: {
     ...StyleSheet.absoluteFillObject,
   },
   swingLane: {
     position: 'absolute',
-    left: '18%',
-    right: '15%',
-    top: '22%',
-    bottom: '10%',
-    borderRadius: 28,
+    left: '17%',
+    right: '14%',
+    top: '19%',
+    bottom: '9%',
+    borderRadius: 30,
     borderWidth: 1,
-    borderColor: 'rgba(255, 110, 209, 0.14)',
+    borderColor: 'rgba(255, 110, 209, 0.15)',
   },
   contactGate: {
     position: 'absolute',
-    top: '32%',
-    right: '18%',
-    width: 68,
-    height: 120,
+    top: '30%',
+    right: '17%',
+    width: 74,
+    height: 130,
     borderRadius: 26,
     borderWidth: 1,
-    borderColor: 'rgba(126, 249, 255, 0.2)',
+    borderColor: 'rgba(126, 249, 255, 0.24)',
   },
   trailDot: {
     position: 'absolute',
@@ -452,160 +572,186 @@ const styles = StyleSheet.create({
   emptyTitle: {
     color: colors.text,
     fontFamily: 'Bangers',
-    fontSize: 28,
-    letterSpacing: 0.6,
+    fontSize: 30,
+    letterSpacing: 0.7,
     marginBottom: spacing.xs,
   },
   emptyCopy: {
     color: colors.textMuted,
-    fontSize: 14,
-    lineHeight: 21,
+    fontSize: 13,
+    lineHeight: 20,
     textAlign: 'center',
   },
   actionRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: spacing.md,
+    marginBottom: spacing.sm,
   },
   actionButtonWrap: {
     width: '31.5%',
-  },
-  statusStrip: {
-    marginBottom: spacing.sm,
-  },
-  statusLabel: {
-    color: colors.accent,
-    fontSize: 12,
-    textTransform: 'uppercase',
-    letterSpacing: 1.2,
-    marginBottom: 4,
-  },
-  statusCopy: {
-    color: colors.textMuted,
-    fontSize: 13,
-    lineHeight: 20,
   },
   settingGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'space-between',
+    marginBottom: spacing.xs,
   },
   settingTile: {
-    width: '48%',
-    borderRadius: radii.md,
+    width: '23.4%',
+    minHeight: 94,
+    borderRadius: 18,
     borderWidth: 1,
-    borderColor: 'rgba(126, 249, 255, 0.18)',
-    backgroundColor: 'rgba(14, 7, 23, 0.78)',
-    padding: spacing.md,
-    marginBottom: spacing.md,
+    borderColor: 'rgba(126, 249, 255, 0.16)',
+    backgroundColor: 'rgba(10, 4, 17, 0.78)',
+    paddingHorizontal: 10,
+    paddingVertical: 10,
+    marginBottom: spacing.sm,
   },
   settingTilePressed: {
-    transform: [{scale: 0.99}],
+    transform: [{scale: 0.98}],
     borderColor: 'rgba(255, 110, 209, 0.38)',
   },
   settingTileDisabled: {
-    opacity: 0.65,
+    opacity: 0.62,
   },
   settingLabel: {
     color: colors.textDim,
-    fontSize: 11,
+    fontSize: 10,
     textTransform: 'uppercase',
-    letterSpacing: 1.1,
-    marginBottom: 4,
+    letterSpacing: 1,
+    marginBottom: 5,
   },
   settingValue: {
     color: colors.text,
     fontFamily: 'Bangers',
-    fontSize: 24,
-    letterSpacing: 0.6,
+    fontSize: 22,
+    letterSpacing: 0.5,
     marginBottom: 4,
   },
   settingDetail: {
     color: colors.textMuted,
+    fontSize: 11,
+    lineHeight: 15,
+  },
+  stageFootnote: {
+    color: colors.textMuted,
     fontSize: 12,
     lineHeight: 18,
+  },
+  sectionBar: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: spacing.sm,
   },
   sectionTitle: {
     color: colors.text,
     fontFamily: 'Bangers',
-    fontSize: 28,
+    fontSize: 26,
     letterSpacing: 0.7,
-    marginBottom: spacing.sm,
   },
-  metricGrid: {
+  sectionMetaPill: {
+    borderRadius: radii.round,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 110, 209, 0.24)',
+    backgroundColor: 'rgba(255, 63, 164, 0.1)',
+    paddingHorizontal: 12,
+    paddingVertical: 5,
+  },
+  sectionMetaText: {
+    color: colors.primarySoft,
+    fontSize: 10,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+  },
+  cardGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'space-between',
-    marginBottom: spacing.lg,
+    marginBottom: spacing.md,
+  },
+  gridTile: {
+    width: '48%',
+    minHeight: 162,
+    borderRadius: 22,
+    borderWidth: 1,
+    padding: 14,
+    marginBottom: spacing.sm,
   },
   metricTile: {
-    width: '48%',
-    borderRadius: radii.md,
-    borderWidth: 1,
     borderColor: colors.stroke,
     backgroundColor: 'rgba(24, 10, 34, 0.92)',
-    padding: spacing.md,
-    marginBottom: spacing.md,
     ...neonShadow,
   },
-  metricTilePressed: {
-    transform: [{scale: 0.99}],
-    borderColor: 'rgba(255, 110, 209, 0.38)',
+  adviceTile: {
+    borderColor: 'rgba(126, 249, 255, 0.2)',
+    backgroundColor: 'rgba(12, 8, 23, 0.88)',
   },
-  metricLabel: {
+  gridTilePressed: {
+    transform: [{scale: 0.99}],
+    borderColor: 'rgba(255, 110, 209, 0.4)',
+  },
+  gridTileTopRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+    gap: spacing.xs,
+  },
+  gridTileLabel: {
     color: colors.textDim,
-    fontSize: 11,
+    fontSize: 10,
     textTransform: 'uppercase',
     letterSpacing: 1.1,
-    marginBottom: 6,
   },
-  metricValue: {
+  historyPill: {
+    borderRadius: radii.round,
+    borderWidth: 1,
+    borderColor: 'rgba(126, 249, 255, 0.22)',
+    backgroundColor: 'rgba(126, 249, 255, 0.1)',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+  },
+  historyPillText: {
+    color: colors.accent,
+    fontSize: 9,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+  },
+  cuePill: {
+    borderRadius: radii.round,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 110, 209, 0.22)',
+    backgroundColor: 'rgba(255, 63, 164, 0.1)',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+  },
+  cuePillText: {
+    color: colors.primarySoft,
+    fontSize: 9,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+  },
+  gridTileValue: {
     color: colors.primarySoft,
     fontFamily: 'Bangers',
-    fontSize: 28,
+    fontSize: 30,
     letterSpacing: 0.7,
-    marginBottom: 6,
+    marginBottom: 8,
   },
-  metricDetail: {
+  gridTileDetail: {
     color: colors.textMuted,
     fontSize: 12,
     lineHeight: 18,
-    marginBottom: spacing.sm,
-  },
-  metricLink: {
-    color: colors.accent,
-    fontSize: 12,
-    fontWeight: '700',
-    textTransform: 'uppercase',
-    letterSpacing: 1.1,
-  },
-  adviceTile: {
-    width: '48%',
-    borderRadius: radii.md,
-    borderWidth: 1,
-    borderColor: 'rgba(126, 249, 255, 0.18)',
-    backgroundColor: 'rgba(14, 7, 23, 0.84)',
-    padding: spacing.md,
-    marginBottom: spacing.md,
-  },
-  adviceLabel: {
-    color: colors.accent,
-    fontSize: 11,
-    textTransform: 'uppercase',
-    letterSpacing: 1.1,
-    marginBottom: 6,
   },
   adviceTitle: {
     color: colors.text,
     fontFamily: 'Bangers',
     fontSize: 24,
     letterSpacing: 0.6,
-    marginBottom: 6,
-  },
-  adviceBody: {
-    color: colors.textMuted,
-    fontSize: 13,
-    lineHeight: 19,
+    marginBottom: 8,
   },
 });
-
