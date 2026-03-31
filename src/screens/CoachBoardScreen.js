@@ -168,6 +168,9 @@ export function CoachBoardScreen({
   const homeDisplayLabel = 'HOME';
   const awayDisplayLabel = 'AWAY';
   const servingTeamName = coachBoard.possession === 'home' ? homeDisplayLabel : awayDisplayLabel;
+  const centerMetaCopy = isCompact ? servingTeamName : 'Serve with ' + servingTeamName;
+  const homeServeState = isVeryCompact ? (coachBoard.possession === 'home' ? 'SRV' : 'RCV') : coachBoard.possession === 'home' ? 'Serving' : 'Receive';
+  const awayServeState = isVeryCompact ? (coachBoard.possession === 'away' ? 'SRV' : 'RCV') : coachBoard.possession === 'away' ? 'Serving' : 'Receive';
 
   const jumpToStatPage = index => {
     setActiveStatIndex(index);
@@ -203,9 +206,9 @@ export function CoachBoardScreen({
         <View style={[styles.scoreMainRow, isCompact && styles.scoreMainRowCompact]}>
           <View style={[styles.teamScorePanel, isCompact && styles.teamScorePanelCompact]}>
             <Text numberOfLines={2} style={[styles.teamName, isCompact && styles.teamNameCompact]}>{homeDisplayLabel}</Text>
-            <View style={[styles.serveBadge, coachBoard.possession === 'home' && styles.serveBadgeActive]}>
-              <Text style={[styles.serveBadgeText, coachBoard.possession === 'home' && styles.serveBadgeTextActive]}>
-                {coachBoard.possession === 'home' ? 'Serving' : 'Receive'}
+            <View style={[styles.serveBadge, isCompact && styles.serveBadgeCompact, coachBoard.possession === 'home' && styles.serveBadgeActive]}>
+              <Text style={[styles.serveBadgeText, isCompact && styles.serveBadgeTextCompact, coachBoard.possession === 'home' && styles.serveBadgeTextActive]}>
+                {homeServeState}
               </Text>
             </View>
             <View style={[styles.scoreValueFrame, isCompact && styles.scoreValueFrameCompact]}>
@@ -223,34 +226,34 @@ export function CoachBoardScreen({
 
             {!isFinal ? (
               <>
-                <View style={styles.pointControlRow}>
+                <View style={[styles.pointControlRow, isCompact && styles.pointControlRowCompact]}>
                   <MiniActionButton label="-1" onPress={() => onAdjustScore('home', -1)} tone="secondary" />
                   <MiniActionButton label="+1" onPress={() => onAdjustScore('home', 1)} />
                 </View>
-                <View style={styles.setControlRow}>
-                  <Text style={styles.setValue}>Sets {coachBoard.homeSets}</Text>
-                  <View style={styles.setControlButtons}>
+                <View style={[styles.setControlRow, isCompact && styles.setControlRowCompact]}>
+                  <Text style={[styles.setValue, isCompact && styles.setValueCompact]}>Sets {coachBoard.homeSets}</Text>
+                  <View style={[styles.setControlButtons, isCompact && styles.setControlButtonsCompact]}>
                     <MiniActionButton label="-S" onPress={() => onAdjustSets('home', -1)} tone="secondary" />
                     <MiniActionButton label="+S" onPress={() => onAdjustSets('home', 1)} />
                   </View>
                 </View>
               </>
             ) : (
-              <Text style={styles.finalSetText}>Sets {coachBoard.homeSets}</Text>
+              <Text style={[styles.finalSetText, isCompact && styles.finalSetTextCompact]}>Sets {coachBoard.homeSets}</Text>
             )}
           </View>
 
           <View style={[styles.scoreCenterRail, isCompact && styles.scoreCenterRailCompact]}>
-            <Text style={styles.centerEyebrow}>Match</Text>
+            <Text style={[styles.centerEyebrow, isCompact && styles.centerEyebrowCompact]}>Match</Text>
             <Text style={[styles.centerValue, isCompact && styles.centerValueCompact]}>VS</Text>
-            <Text style={[styles.centerMeta, isCompact && styles.centerMetaCompact]}>Serve with {servingTeamName}</Text>
+            <Text style={[styles.centerMeta, isCompact && styles.centerMetaCompact]}>{centerMetaCopy}</Text>
           </View>
 
           <View style={[styles.teamScorePanel, isCompact && styles.teamScorePanelCompact]}>
             <Text numberOfLines={2} style={[styles.teamName, isCompact && styles.teamNameCompact]}>{awayDisplayLabel}</Text>
-            <View style={[styles.serveBadge, coachBoard.possession === 'away' && styles.serveBadgeActive]}>
-              <Text style={[styles.serveBadgeText, coachBoard.possession === 'away' && styles.serveBadgeTextActive]}>
-                {coachBoard.possession === 'away' ? 'Serving' : 'Receive'}
+            <View style={[styles.serveBadge, isCompact && styles.serveBadgeCompact, coachBoard.possession === 'away' && styles.serveBadgeActive]}>
+              <Text style={[styles.serveBadgeText, isCompact && styles.serveBadgeTextCompact, coachBoard.possession === 'away' && styles.serveBadgeTextActive]}>
+                {awayServeState}
               </Text>
             </View>
             <View style={[styles.scoreValueFrame, isCompact && styles.scoreValueFrameCompact]}>
@@ -268,20 +271,20 @@ export function CoachBoardScreen({
 
             {!isFinal ? (
               <>
-                <View style={styles.pointControlRow}>
+                <View style={[styles.pointControlRow, isCompact && styles.pointControlRowCompact]}>
                   <MiniActionButton label="-1" onPress={() => onAdjustScore('away', -1)} tone="secondary" />
                   <MiniActionButton label="+1" onPress={() => onAdjustScore('away', 1)} />
                 </View>
-                <View style={styles.setControlRow}>
-                  <Text style={styles.setValue}>Sets {coachBoard.awaySets}</Text>
-                  <View style={styles.setControlButtons}>
+                <View style={[styles.setControlRow, isCompact && styles.setControlRowCompact]}>
+                  <Text style={[styles.setValue, isCompact && styles.setValueCompact]}>Sets {coachBoard.awaySets}</Text>
+                  <View style={[styles.setControlButtons, isCompact && styles.setControlButtonsCompact]}>
                     <MiniActionButton label="-S" onPress={() => onAdjustSets('away', -1)} tone="secondary" />
                     <MiniActionButton label="+S" onPress={() => onAdjustSets('away', 1)} />
                   </View>
                 </View>
               </>
             ) : (
-              <Text style={styles.finalSetText}>Sets {coachBoard.awaySets}</Text>
+              <Text style={[styles.finalSetText, isCompact && styles.finalSetTextCompact]}>Sets {coachBoard.awaySets}</Text>
             )}
           </View>
         </View>
@@ -474,8 +477,9 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   },
   scoreMainRowCompact: {
-    flexDirection: 'column',
-    gap: spacing.md,
+    flexDirection: 'row',
+    alignItems: 'stretch',
+    gap: 6,
   },
   teamScorePanel: {
     flex: 1,
@@ -495,7 +499,11 @@ const styles = StyleSheet.create({
     elevation: 10,
   },
   teamScorePanelCompact: {
-    width: '100%',
+    flex: 1,
+    width: 0,
+    minWidth: 0,
+    paddingHorizontal: 8,
+    paddingVertical: 10,
   },
   teamName: {
     color: colors.primarySoft,
@@ -512,7 +520,8 @@ const styles = StyleSheet.create({
     textShadowRadius: 10,
   },
   teamNameCompact: {
-    fontSize: 21,
+    fontSize: 16,
+    letterSpacing: 1.4,
   },
   serveBadge: {
     marginTop: spacing.sm,
@@ -535,6 +544,12 @@ const styles = StyleSheet.create({
     },
     elevation: 6,
   },
+  serveBadgeCompact: {
+    marginTop: 6,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 10,
+  },
   serveBadgeText: {
     color: colors.textDim,
     fontSize: 11,
@@ -544,6 +559,10 @@ const styles = StyleSheet.create({
   },
   serveBadgeTextActive: {
     color: colors.text,
+  },
+  serveBadgeTextCompact: {
+    fontSize: 9,
+    letterSpacing: 0.7,
   },
   scoreValueFrame: {
     minWidth: 154,
@@ -566,9 +585,12 @@ const styles = StyleSheet.create({
     elevation: 10,
   },
   scoreValueFrameCompact: {
-    minWidth: 124,
+    minWidth: 0,
     width: '100%',
-    marginVertical: spacing.xs,
+    borderRadius: 14,
+    paddingHorizontal: 4,
+    paddingVertical: 4,
+    marginVertical: 6,
   },
   scoreValue: {
     color: colors.text,
@@ -587,18 +609,24 @@ const styles = StyleSheet.create({
     textShadowRadius: 18,
   },
   scoreValueCompact: {
-    fontSize: 78,
-    lineHeight: 82,
+    fontSize: 58,
+    lineHeight: 60,
+    letterSpacing: 1.2,
   },
   scoreValueVeryCompact: {
-    fontSize: 64,
-    lineHeight: 68,
+    fontSize: 52,
+    lineHeight: 54,
+    letterSpacing: 1,
   },
   pointControlRow: {
     width: '100%',
     flexDirection: 'row',
     gap: spacing.sm,
     marginBottom: spacing.sm,
+  },
+  pointControlRowCompact: {
+    gap: 6,
+    marginBottom: 6,
   },
   setControlRow: {
     width: '100%',
@@ -610,6 +638,12 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.sm,
     gap: spacing.sm,
   },
+  setControlRowCompact: {
+    borderRadius: 12,
+    paddingHorizontal: 6,
+    paddingVertical: 6,
+    gap: 6,
+  },
   setValue: {
     color: colors.primarySoft,
     fontSize: 13,
@@ -618,15 +652,26 @@ const styles = StyleSheet.create({
     letterSpacing: 0.9,
     textTransform: 'uppercase',
   },
+  setValueCompact: {
+    fontSize: 10,
+    letterSpacing: 0.7,
+  },
   setControlButtons: {
     flexDirection: 'row',
     gap: spacing.sm,
+  },
+  setControlButtonsCompact: {
+    gap: 6,
   },
   finalSetText: {
     color: colors.primarySoft,
     fontSize: 18,
     fontWeight: '700',
     marginTop: spacing.sm,
+  },
+  finalSetTextCompact: {
+    fontSize: 14,
+    marginTop: 6,
   },
   scoreCenterRail: {
     width: 76,
@@ -635,15 +680,18 @@ const styles = StyleSheet.create({
     paddingHorizontal: 4,
   },
   scoreCenterRailCompact: {
-    width: '100%',
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    borderRadius: radii.md,
-    borderWidth: 1,
-    borderColor: 'rgba(126, 249, 255, 0.16)',
-    backgroundColor: 'rgba(8, 8, 14, 0.48)',
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
+    width: 46,
+    minWidth: 46,
+    flexDirection: 'column',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: 'rgba(126, 249, 255, 0.22)',
+    backgroundColor: 'rgba(8, 8, 14, 0.66)',
+    paddingHorizontal: 2,
+    paddingVertical: 6,
+    gap: 2,
   },
   centerEyebrow: {
     color: colors.textDim,
@@ -651,6 +699,10 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     letterSpacing: 1,
     textTransform: 'uppercase',
+  },
+  centerEyebrowCompact: {
+    fontSize: 8,
+    letterSpacing: 0.6,
   },
   centerValue: {
     color: colors.primaryBright,
@@ -666,7 +718,8 @@ const styles = StyleSheet.create({
     textShadowRadius: 12,
   },
   centerValueCompact: {
-    fontSize: 30,
+    fontSize: 18,
+    letterSpacing: 1.6,
     marginVertical: 0,
   },
   centerMeta: {
@@ -676,9 +729,11 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   centerMetaCompact: {
-    flex: 1,
-    textAlign: 'right',
-    marginLeft: spacing.sm,
+    flex: 0,
+    fontSize: 8,
+    lineHeight: 10,
+    textAlign: 'center',
+    marginLeft: 0,
   },
   scoreFooter: {
     gap: spacing.md,
@@ -703,13 +758,13 @@ const styles = StyleSheet.create({
   },
   miniButton: {
     flex: 1,
-    minHeight: 40,
+    minHeight: 36,
     borderRadius: 12,
     borderWidth: 2,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 8,
+    paddingHorizontal: 6,
+    paddingVertical: 6,
   },
   miniButtonPrimary: {
     backgroundColor: 'rgba(255, 63, 164, 0.18)',
@@ -723,9 +778,9 @@ const styles = StyleSheet.create({
     transform: [{scale: 0.98}],
   },
   miniButtonLabel: {
-    fontSize: 11,
+    fontSize: 10,
     fontWeight: '700',
-    letterSpacing: 0.8,
+    letterSpacing: 0.7,
     textTransform: 'uppercase',
   },
   miniButtonLabelPrimary: {
