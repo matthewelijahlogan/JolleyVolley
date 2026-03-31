@@ -1,4 +1,4 @@
-import {Alert, ScrollView, StyleSheet, Text, View} from 'react-native';
+import {Alert, Linking, PermissionsAndroid, Platform, ScrollView, StyleSheet, Text, View} from 'react-native';
 import {launchCamera, launchImageLibrary} from 'react-native-image-picker';
 import Video from 'react-native-video';
 
@@ -97,6 +97,55 @@ function MachineReadCard({label, value, detail}) {
   );
 }
 
+async function requestAndroidVideoCapturePermissions() {
+  if (Platform.OS !== 'android') {
+    return true;
+  }
+
+  const permissionMap = {
+    [PermissionsAndroid.PERMISSIONS.CAMERA]: 'camera',
+    [PermissionsAndroid.PERMISSIONS.RECORD_AUDIO]: 'microphone',
+  };
+  const permissions = Object.keys(permissionMap);
+  const missingPermissions = [];
+
+  for (const permission of permissions) {
+    const granted = await PermissionsAndroid.check(permission);
+    if (!granted) {
+      missingPermissions.push(permission);
+    }
+  }
+
+  if (missingPermissions.length === 0) {
+    return true;
+  }
+
+  const result = await PermissionsAndroid.requestMultiple(missingPermissions);
+  const blockedLabels = [];
+
+  for (const permission of missingPermissions) {
+    const status = result[permission];
+    if (status !== PermissionsAndroid.RESULTS.GRANTED) {
+      blockedLabels.push(permissionMap[permission]);
+    }
+  }
+
+  if (blockedLabels.length === 0) {
+    return true;
+  }
+
+  Alert.alert(
+    'Camera access needed',
+    `Allow ${blockedLabels.join(' and ')} access so Motion Lab can record volleyball reps on this device.`,
+    [
+      {text: 'Not now', style: 'cancel'},
+      {text: 'Open Settings', onPress: () => Linking.openSettings()},
+    ],
+  );
+
+  return false;
+}
+
 export function MotionLabScreen({
   analysisInput,
   analysisResult,
@@ -109,6 +158,11 @@ export function MotionLabScreen({
   trackingStatus,
 }) {
   const handleCameraLaunch = async () => {
+    const hasPermissions = await requestAndroidVideoCapturePermissions();
+    if (!hasPermissions) {
+      return;
+    }
+
     const result = await launchCamera({
       mediaType: 'video',
       durationLimit: 20,
@@ -783,3 +837,5 @@ const styles = StyleSheet.create({
     lineHeight: 21,
   },
 });
+
+
