@@ -27,18 +27,18 @@ export function FeedbackScreen({analysisResult, onGoHome, onOpenScreen, selected
             <Text style={styles.sourceCopy}>
               {usingTrackedSession
                 ? usingDirectBallTrack
-                  ? 'These cues are being generated from the tracked swing path, the direct tracked ball trail, and the current session inputs from the active clip.'
-                  : 'These cues are being generated from the tracked swing path on the active clip, plus the current session inputs. The ball-speed read will stay on the swing model until the direct ball pass locks on.'
-                : 'These cues are still using the active Motion Lab session inputs. Run Auto Track Swing to feed the tracked hand path into the advice.'}
+                  ? 'These cues are being generated from the tracked swing path, the direct tracked ball trail, and the machine-filled session read from the active clip.'
+                  : 'These cues are being generated from the tracked swing path on the active clip plus the machine-filled read. The ball-speed result will stay on the swing model until the direct ball pass locks on.'
+                : 'These cues are waiting on the machine-filled session read. Run Motion Lab analysis on a clip to feed the tracked hand path into the advice.'}
             </Text>
             <Text style={styles.sourceMeta}>Current clip: {selectedVideo?.fileName || 'No clip selected'}</Text>
-            <Text style={styles.sourceMeta}>Tracking status: {trackingStatus === 'running' ? 'Tracking now' : trackingStatus === 'ready' ? 'Tracked clip ready' : 'Manual mode'}</Text>
+            <Text style={styles.sourceMeta}>Tracking status: {trackingStatus === 'running' ? 'Tracking now' : trackingStatus === 'ready' ? 'Tracked clip ready' : 'Awaiting machine read'}</Text>
             {analysisResult?.ballSpeedSource === 'ball-track' ? (
               <Text style={styles.sourceMeta}>Ball-speed source: direct ball trail</Text>
             ) : analysisResult?.ballSpeedSource === 'tracked-estimate' ? (
               <Text style={styles.sourceMeta}>Ball-speed source: tracked swing estimate</Text>
-            ) : analysisResult?.ballSpeedSource === 'manual-flight' ? (
-              <Text style={styles.sourceMeta}>Ball-speed source: manual flight sample</Text>
+            ) : analysisResult?.ballSpeedSource === 'derived-flight' ? (
+              <Text style={styles.sourceMeta}>Ball-speed source: derived clip-timing read</Text>
             ) : null}
           </View>
 

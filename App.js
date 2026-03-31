@@ -97,24 +97,15 @@ export default function App() {
     [],
   );
 
-  const handleChangeField = (field, value) => {
-    setAnalysisInput(current => ({
-      ...current,
-      [field]: value,
-    }));
-  };
-
-  const handleRunAnalysis = () => {
-    setAnalysisResult(runVideoAnalysis(analysisInput, trackingResult));
-  };
 
   const handleAnalyzeRep = async () => {
-    if (selectedVideo?.uri) {
-      await handleTrackSwing();
+    if (!selectedVideo?.uri) {
+      setTrackingStatus('error');
+      setTrackingError('Select or record a clip so Motion Lab can fill the session from the video.');
       return;
     }
 
-    handleRunAnalysis();
+    await handleTrackSwing();
   };
 
   const handleTrackSwing = async () => {
@@ -130,14 +121,34 @@ export default function App() {
       const result = await analyzeMotionVideo(selectedVideo.uri);
       setTrackingResult(result);
       setTrackingStatus('ready');
-      setAnalysisInput(current => ({
-        ...current,
-        hitchFrames: Number.isFinite(result?.hitchFrames) ? `${result.hitchFrames}` : current.hitchFrames,
-        contactPoint: result?.contactPoint || current.contactPoint,
-        ballTravelFeet: Number.isFinite(result?.detectedBallTravelFeet) && result.detectedBallTravelFeet > 0
-          ? `${Number(result.detectedBallTravelFeet).toFixed(1)}`
-          : current.ballTravelFeet,
-      }));
+      setAnalysisInput({
+        standingReachInches:
+          Number.isFinite(result?.standingReachInches) && result.standingReachInches > 0
+            ? `${Number(result.standingReachInches).toFixed(1)}`
+            : '',
+        contactReachInches:
+          Number.isFinite(result?.contactReachInches) && result.contactReachInches > 0
+            ? `${Number(result.contactReachInches).toFixed(1)}`
+            : '',
+        ballTravelFeet:
+          Number.isFinite(result?.detectedBallTravelFeet) && result.detectedBallTravelFeet > 0
+            ? `${Number(result.detectedBallTravelFeet).toFixed(1)}`
+            : '',
+        releaseFrames:
+          Number.isFinite(result?.releaseFrames) && result.releaseFrames > 0
+            ? `${result.releaseFrames}`
+            : '',
+        fps:
+          Number.isFinite(result?.fps) && result.fps > 0
+            ? `${Math.round(result.fps)}`
+            : '',
+        hitchFrames:
+          Number.isFinite(result?.hitchFrames) && result.hitchFrames >= 0
+            ? `${result.hitchFrames}`
+            : '',
+        contactPoint: result?.contactPoint || 'ideal',
+        landingStability: result?.landingStability || 'steady',
+      });
     } catch (error) {
       setTrackingResult(null);
       setTrackingStatus('error');
@@ -147,6 +158,7 @@ export default function App() {
 
   const handleSelectVideo = videoAsset => {
     setSelectedVideo(videoAsset);
+    setAnalysisInput(initialAnalysisInput);
     setTrackingResult(null);
     setTrackingStatus('idle');
     setTrackingError('');
@@ -209,7 +221,6 @@ export default function App() {
       <MotionLabScreen
         analysisInput={analysisInput}
         analysisResult={analysisResult}
-        onChangeField={handleChangeField}
         onAnalyzeRep={handleAnalyzeRep}
         onSelectVideo={handleSelectVideo}
         onTrackSwing={handleTrackSwing}

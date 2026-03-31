@@ -1,4 +1,4 @@
-﻿import {ScrollView, StyleSheet, Text, View} from 'react-native';
+import {ScrollView, StyleSheet, Text, View} from 'react-native';
 import Video from 'react-native-video';
 
 import {NeonButton} from '../components/NeonButton';
@@ -45,7 +45,7 @@ export function PlaybackScreen({analysisResult, onGoHome, onOpenScreen, selected
             ? ballTrackingApplied
               ? 'This view is using the tracked hand path and the direct tracked ball trail pulled from the current clip.'
               : 'This view is using the tracked hand path pulled from the current clip. The ball trail will stay simulated until the direct ball pass locks on.'
-            : 'This view is using the current Motion Lab session profile. Run Auto Track Swing in the recorder to replace the hand path with a tracked clip sample.'}
+            : 'This view is waiting on the machine-filled session read. Run Motion Lab analysis on a clip to replace the fallback hand path with the tracked sample.'}
         </Text>
       </View>
 
@@ -80,12 +80,12 @@ export function PlaybackScreen({analysisResult, onGoHome, onOpenScreen, selected
       {analysisResult ? (
         <>
           <View style={styles.statGrid}>
-            <TrackerStat label="Tracking" value={analysisResult.trackingApplied ? 'Auto' : 'Manual'} />
+            <TrackerStat label="Tracking" value={analysisResult.trackingApplied ? 'Auto' : 'Pending AI'} />
             <TrackerStat label="Ball Trail" value={ballTrackingApplied ? 'Direct' : 'Simulated'} />
             <TrackerStat label="Hitch Frames" value={`${analysisResult.hitchFrames}`} />
             <TrackerStat
               label="MPH Source"
-              value={analysisResult.ballSpeedSource === 'ball-track' ? 'Ball' : analysisResult.ballSpeedSource === 'tracked-estimate' ? 'Hand' : analysisResult.ballSpeedSource === 'manual-flight' ? 'Manual' : 'Pending'}
+              value={analysisResult.ballSpeedSource === 'ball-track' ? 'Ball' : analysisResult.ballSpeedSource === 'tracked-estimate' ? 'Hand' : analysisResult.ballSpeedSource === 'derived-flight' ? 'Derived' : 'Pending'}
             />
           </View>
 
@@ -105,7 +105,7 @@ export function PlaybackScreen({analysisResult, onGoHome, onOpenScreen, selected
                   : `${analysisResult.dominantHand} hand tracked | ${analysisResult.trackedFrames}/${analysisResult.processedFrames} sampled frames | ball trail fallback`
                 : trackingStatus === 'running'
                   ? 'Swing tracking is still processing the current clip.'
-                  : 'This overlay is still using the manual session profile.'}
+                  : 'This overlay is waiting on the machine-filled session read.'}
             </Text>
           </View>
         </>

@@ -1,4 +1,4 @@
-import {Alert, Pressable, ScrollView, StyleSheet, Text, TextInput, View} from 'react-native';
+import {Alert, ScrollView, StyleSheet, Text, View} from 'react-native';
 import {launchCamera, launchImageLibrary} from 'react-native-image-picker';
 import Video from 'react-native-video';
 
@@ -22,28 +22,24 @@ function formatContactPoint(value) {
   return 'Ideal';
 }
 
-function ChoicePill({label, active, onPress}) {
-  return (
-    <Pressable onPress={onPress} style={[styles.choicePill, active && styles.choicePillActive]}>
-      <Text style={[styles.choicePillLabel, active && styles.choicePillLabelActive]}>{label}</Text>
-    </Pressable>
-  );
+function formatLandingStability(value) {
+  if (value === 'off-balance') {
+    return 'Off Balance';
+  }
+
+  if (value === 'steady') {
+    return 'Steady';
+  }
+
+  return 'Awaiting AI';
 }
 
-function InputCard({label, value, onChangeText}) {
-  return (
-    <View style={styles.inputCard}>
-      <Text style={styles.inputLabel}>{label}</Text>
-      <TextInput
-        keyboardType="numeric"
-        onChangeText={onChangeText}
-        placeholder="0"
-        placeholderTextColor={colors.textDim}
-        style={styles.input}
-        value={value}
-      />
-    </View>
-  );
+function toMachineValue(value, suffix = '') {
+  if (`${value ?? ''}`.trim().length === 0) {
+    return 'Awaiting AI';
+  }
+
+  return suffix ? `${value}${suffix}` : `${value}`;
 }
 
 function TrailDot({style, glow = 'pink'}) {
@@ -91,11 +87,20 @@ function AdviceRow({item}) {
   );
 }
 
+function MachineReadCard({label, value, detail}) {
+  return (
+    <View style={styles.machineReadCard}>
+      <Text style={styles.machineReadLabel}>{label}</Text>
+      <Text style={styles.machineReadValue}>{value}</Text>
+      <Text style={styles.machineReadDetail}>{detail}</Text>
+    </View>
+  );
+}
+
 export function MotionLabScreen({
   analysisInput,
   analysisResult,
   onAnalyzeRep,
-  onChangeField,
   onGoHome,
   onSelectVideo,
   selectedVideo,
@@ -168,7 +173,7 @@ export function MotionLabScreen({
               ? 'Direct ball trail read'
               : analysisResult.ballSpeedSource === 'tracked-estimate'
                 ? 'Tracked hand-speed estimate'
-                : 'Manual flight sample',
+                : 'Derived from clip timing',
         },
         {
           label: 'Peak Hand',
@@ -192,6 +197,38 @@ export function MotionLabScreen({
         },
       ]
     : [];
+  const machineReadTiles = [
+    {
+      label: 'Standing Reach',
+      value: toMachineValue(analysisInput.standingReachInches, ' in'),
+      detail: 'Auto-filled baseline reach from the pose model',
+    },
+    {
+      label: 'Contact Reach',
+      value: toMachineValue(analysisInput.contactReachInches, ' in'),
+      detail: 'Auto-filled contact height from the tracked rep',
+    },
+    {
+      label: 'Ball Travel',
+      value: toMachineValue(analysisInput.ballTravelFeet, ' ft'),
+      detail: 'Filled from the ball flight after contact',
+    },
+    {
+      label: 'Release Frames',
+      value: toMachineValue(analysisInput.releaseFrames),
+      detail: 'Release timing pulled from the tracked clip',
+    },
+    {
+      label: 'FPS',
+      value: toMachineValue(analysisInput.fps),
+      detail: 'Video frame rate read from the file metadata',
+    },
+    {
+      label: 'Landing',
+      value: formatLandingStability(analysisInput.landingStability),
+      detail: 'Landing balance read from post-contact body drift',
+    },
+  ];
 
   return (
     <ScrollView
@@ -202,9 +239,9 @@ export function MotionLabScreen({
 
       <View style={styles.heroCard}>
         <Text style={styles.heroEyebrow}>Motion Lab</Text>
-        <Text style={styles.heroTitle}>One Rep. One Run. Full Readout.</Text>
+        <Text style={styles.heroTitle}>Machine-Filled Session Read</Text>
         <Text style={styles.heroCopy}>
-          Record or import a clip, press one analysis button, and get the swing trail, ball tracking, jump numbers, and coaching cues together.
+          Record or import a clip, press one analysis button, and let the model fill the swing trail, ball tracking, jump numbers, timing, and coaching cues from the video.
         </Text>
       </View>
 
@@ -240,7 +277,7 @@ export function MotionLabScreen({
           ) : (
             <View style={styles.emptyFrame}>
               <Text style={styles.emptyTitle}>No clip loaded</Text>
-              <Text style={styles.emptyCopy}>Bring in a player rep and Motion Lab will stack the swing, ball, and jump readout here.</Text>
+              <Text style={styles.emptyCopy}>Bring in a player rep and Motion Lab will fill the session from the video instead of asking for coach input.</Text>
             </View>
           )}
         </View>
@@ -259,7 +296,7 @@ export function MotionLabScreen({
       <View style={styles.analysisActionCard}>
         <Text style={styles.analysisActionTitle}>Run Full Motion Lab</Text>
         <Text style={styles.analysisActionCopy}>
-          One pass runs swing tracking, ball tracking, jump math, speed calculation, and coaching assessment from the active rep.
+          One pass runs swing tracking, ball tracking, jump math, release timing, landing stability, and the coaching assessment from the active rep.
         </Text>
         <NeonButton
           label={trackingStatus === 'running' ? 'Analyzing Motion Lab...' : 'Analyze Motion Lab'}
@@ -270,13 +307,13 @@ export function MotionLabScreen({
       <View style={styles.statusCard}>
         <Text style={styles.sectionLabel}>Analysis Status</Text>
         {trackingStatus === 'running' ? (
-          <Text style={styles.statusCopy}>The app is tracking the swing, checking the ball flight after contact, and updating the shared motion readout.</Text>
+          <Text style={styles.statusCopy}>The app is reading pose, tracking the ball flight, filling the machine fields, and updating the shared motion readout.</Text>
         ) : trackingReady ? (
           <>
             <Text style={styles.statusTitle}>Tracked {trackingResult.dominantHand} hand with {Number(trackingResult.trackedFrames || 0).toFixed(0)} swing samples.</Text>
             <Text style={styles.statusCopy}>
               {Number(trackingResult.ballTrackedFrames || 0) > 1
-                ? `The direct ball pass locked ${Number(trackingResult.ballTrackedFrames).toFixed(0)} frames and pushed the current ball-speed result into the stat grid.`
+                ? `The direct ball pass locked ${Number(trackingResult.ballTrackedFrames).toFixed(0)} frames and filled the current speed and timing readout from the clip.`
                 : 'The swing path is locked. The ball trail is still falling back to the projected flight until the direct ball pass catches more frames.'}
             </Text>
             <Text style={styles.statusMeta}>Swing track: {formatPercent(trackingResult.trackingQuality)}</Text>
@@ -288,77 +325,18 @@ export function MotionLabScreen({
             <Text style={styles.statusCopy}>{trackingError}</Text>
           </>
         ) : (
-          <Text style={styles.statusCopy}>Load a clip and press Analyze Motion Lab. The screen will keep the results together instead of sending you through separate tools.</Text>
+          <Text style={styles.statusCopy}>Load a clip and press Analyze Motion Lab. The session cards below will be filled only by the tracker and the video metadata.</Text>
         )}
       </View>
 
-      <View style={styles.inputsCard}>
-        <Text style={styles.sectionLabel}>Session Inputs</Text>
-        <View style={styles.inputGrid}>
-          <InputCard
-            label="Standing Reach"
-            onChangeText={value => onChangeField('standingReachInches', value)}
-            value={analysisInput.standingReachInches}
-          />
-          <InputCard
-            label="Contact Reach"
-            onChangeText={value => onChangeField('contactReachInches', value)}
-            value={analysisInput.contactReachInches}
-          />
-          <InputCard
-            label="Ball Travel"
-            onChangeText={value => onChangeField('ballTravelFeet', value)}
-            value={analysisInput.ballTravelFeet}
-          />
-          <InputCard
-            label="Release Frames"
-            onChangeText={value => onChangeField('releaseFrames', value)}
-            value={analysisInput.releaseFrames}
-          />
-          <InputCard
-            label="FPS"
-            onChangeText={value => onChangeField('fps', value)}
-            value={analysisInput.fps}
-          />
-          <InputCard
-            label="Hitch Frames"
-            onChangeText={value => onChangeField('hitchFrames', value)}
-            value={analysisInput.hitchFrames}
-          />
+      <View style={styles.machineCardShell}>
+        <Text style={styles.sectionLabel}>AI Session Read</Text>
+        <View style={styles.machineGrid}>
+          {machineReadTiles.map(item => (
+            <MachineReadCard detail={item.detail} key={item.label} label={item.label} value={item.value} />
+          ))}
         </View>
-
-        <Text style={[styles.sectionLabel, styles.sectionLabelSpaced]}>Contact Point</Text>
-        <View style={styles.choiceRow}>
-          <ChoicePill
-            active={analysisInput.contactPoint === 'behind'}
-            label="Behind"
-            onPress={() => onChangeField('contactPoint', 'behind')}
-          />
-          <ChoicePill
-            active={analysisInput.contactPoint === 'ideal'}
-            label="Ideal"
-            onPress={() => onChangeField('contactPoint', 'ideal')}
-          />
-          <ChoicePill
-            active={analysisInput.contactPoint === 'in-front'}
-            label="In Front"
-            onPress={() => onChangeField('contactPoint', 'in-front')}
-          />
-        </View>
-
-        <Text style={[styles.sectionLabel, styles.sectionLabelSpaced]}>Landing Stability</Text>
-        <View style={styles.choiceRow}>
-          <ChoicePill
-            active={analysisInput.landingStability === 'steady'}
-            label="Steady"
-            onPress={() => onChangeField('landingStability', 'steady')}
-          />
-          <ChoicePill
-            active={analysisInput.landingStability === 'off-balance'}
-            label="Off Balance"
-            onPress={() => onChangeField('landingStability', 'off-balance')}
-          />
-        </View>
+        <Text style={styles.machineFootnote}>No coach typing is needed here. These values are filled from the tracker, pose read, ball read, and video metadata.</Text>
       </View>
 
       {analysisResult ? (
@@ -455,9 +433,6 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
     letterSpacing: 1.2,
     marginBottom: spacing.sm,
-  },
-  sectionLabelSpaced: {
-    marginTop: spacing.md,
   },
   videoFrame: {
     height: 280,
@@ -623,7 +598,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     marginTop: spacing.sm,
   },
-  inputsCard: {
+  machineCardShell: {
     borderRadius: radii.lg,
     borderWidth: 1,
     borderColor: colors.stroke,
@@ -631,12 +606,12 @@ const styles = StyleSheet.create({
     padding: spacing.lg,
     marginBottom: spacing.lg,
   },
-  inputGrid: {
+  machineGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'space-between',
   },
-  inputCard: {
+  machineReadCard: {
     width: '48%',
     borderRadius: radii.md,
     borderWidth: 1,
@@ -645,47 +620,29 @@ const styles = StyleSheet.create({
     padding: spacing.md,
     marginBottom: spacing.md,
   },
-  inputLabel: {
+  machineReadLabel: {
     color: colors.textMuted,
     fontSize: 12,
     textTransform: 'uppercase',
     letterSpacing: 1.1,
-    marginBottom: spacing.xs,
+    marginBottom: 4,
   },
-  input: {
+  machineReadValue: {
     color: colors.text,
-    borderRadius: radii.sm,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 110, 209, 0.22)',
-    backgroundColor: 'rgba(9, 2, 15, 0.92)',
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 10,
-    fontSize: 16,
+    fontFamily: 'Bangers',
+    fontSize: 24,
+    letterSpacing: 0.6,
+    marginBottom: 4,
   },
-  choiceRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: spacing.sm,
+  machineReadDetail: {
+    color: colors.textDim,
+    fontSize: 13,
+    lineHeight: 20,
   },
-  choicePill: {
-    borderRadius: radii.round,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 110, 209, 0.2)',
-    backgroundColor: 'rgba(9, 2, 15, 0.92)',
-    paddingHorizontal: spacing.md,
-    paddingVertical: 10,
-  },
-  choicePillActive: {
-    borderColor: 'rgba(255, 110, 209, 0.45)',
-    backgroundColor: 'rgba(255, 63, 164, 0.16)',
-  },
-  choicePillLabel: {
-    color: colors.textMuted,
-    fontSize: 14,
-  },
-  choicePillLabelActive: {
-    color: colors.text,
-    fontWeight: '700',
+  machineFootnote: {
+    color: colors.accent,
+    fontSize: 12,
+    lineHeight: 18,
   },
   resultsCard: {
     borderRadius: radii.lg,

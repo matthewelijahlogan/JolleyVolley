@@ -55,6 +55,7 @@ class MotionTrackerModule(private val appContext: ReactApplicationContext) : Rea
       val videoWidth = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_WIDTH)?.toFloatOrNull() ?: 1080f
       val videoHeight = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_HEIGHT)?.toFloatOrNull() ?: 1920f
       val aspectRatio = if (videoHeight > 0f) videoWidth / videoHeight else 1f
+      val videoFps = extractVideoFps(retriever, durationMs)
 
       val inferenceIntervalMs = determineInferenceInterval(durationMs)
       val rightSamples = mutableListOf<WristSample>()
@@ -69,7 +70,7 @@ class MotionTrackerModule(private val appContext: ReactApplicationContext) : Rea
         val result = poseLandmarker.detectForVideo(mpImage, timestampMs)
         val landmarks = result.landmarks().firstOrNull()
 
-        if (landmarks != null && landmarks.size > RIGHT_HIP_INDEX) {
+        if (landmarks != null && landmarks.size > RIGHT_ANKLE_INDEX) {
           buildSample(landmarks, timestampMs, true, aspectRatio)?.let { rightSamples.add(it) }
           buildSample(landmarks, timestampMs, false, aspectRatio)?.let { leftSamples.add(it) }
         }
@@ -99,13 +100,25 @@ class MotionTrackerModule(private val appContext: ReactApplicationContext) : Rea
       val detectedBallSpeedMph = computeBallSpeedMph(ballTracking.samples, aspectRatio, contactSample.shoulderSpan)
       val detectedBallTravelFeet = computeBallTravelFeet(ballTracking.samples, aspectRatio, contactSample.shoulderSpan)
       val ballTrackingQuality = computeBallTrackingQuality(ballTracking.samples, ballTracking.expectedFrames)
+      val groundBaselineY = computeGroundBaselineY(smoothedSamples)
+      val contactReachInches = computeReachHeightInches(contactSample, groundBaselineY)
+      val verticalLeapInches = computeVerticalLeapInches(smoothedSamples, contactSample, groundBaselineY)
+      val standingReachInches = max(0f, contactReachInches - verticalLeapInches)
+      val landingStability = inferLandingStability(smoothedSamples, contactSample, aspectRatio)
+      val releaseFrames = computeReleaseFrames(ballTracking.samples, contactSample, videoFps, inferenceIntervalMs)
 
       putString("dominantHand", dominantHand)
       putInt("processedFrames", processedFrames)
       putInt("trackedFrames", selectedSamples.size)
       putInt("hitchFrames", hitchFrames)
       putString("contactPoint", contactPoint)
+      putString("landingStability", landingStability)
       putDouble("trackingQuality", quality.toDouble())
+      putDouble("fps", videoFps.toDouble())
+      putInt("releaseFrames", releaseFrames)
+      putDouble("standingReachInches", standingReachInches.toDouble())
+      putDouble("contactReachInches", contactReachInches.toDouble())
+      putDouble("verticalLeapInches", verticalLeapInches.toDouble())
       putInt("inferenceIntervalMs", inferenceIntervalMs.toInt())
       putDouble("peakHandSpeedMph", peakHandSpeedMph.toDouble())
       putDouble("estimatedBallSpeedMph", estimatedBallSpeedMph.toDouble())
@@ -481,6 +494,103 @@ class MotionTrackerModule(private val appContext: ReactApplicationContext) : Rea
     }
   }
 
+  private fun extractVideoFps(retriever: MediaMetadataRetriever, durationMs: Long): Float {
+    val captureFps = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_CAPTURE_FRAMERATE)?.toFloatOrNull()
+    if (captureFps != null && captureFps >= 24f) {
+      return min(240f, captureFps)
+    }
+
+    val frameCount = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_FRAME_COUNT)?.toFloatOrNull()
+    if (frameCount != null && durationMs > 0L) {
+      val inferredFps = frameCount / (durationMs.toFloat() / 1000f)
+      if (inferredFps >= 24f) {
+        return min(240f, inferredFps)
+      }
+    }
+
+    return 60f
+  }
+
+  private fun computeGroundBaselineY(samples: List<WristSample>): Float {
+    val ankleYs = samples.mapNotNull { sample ->
+      if (sample.ankleVisibility >= 0.2f && !sample.ankleCenterY.isNaN()) sample.ankleCenterY else null
+    }
+
+    if (ankleYs.isNotEmpty()) {
+      return ankleYs.sortedDescending().take(min(4, ankleYs.size)).average().toFloat()
+    }
+
+    val estimatedGround = samples.map { it.hipCenterY + (it.shoulderSpan * 2.75f) }.average().toFloat()
+    return min(0.98f, estimatedGround)
+  }
+
+  private fun computeReachHeightInches(sample: WristSample, groundBaselineY: Float): Float {
+    val verticalUnits = max(0f, groundBaselineY - sample.y)
+    val reachFeet = (verticalUnits / max(0.04f, sample.shoulderSpan)) * ASSUMED_SHOULDER_WIDTH_FEET
+    return min(168f, max(0f, reachFeet * 12f))
+  }
+
+  private fun computeVerticalLeapInches(samples: List<WristSample>, contactSample: WristSample, groundBaselineY: Float): Float {
+    val ankleRiseUnits = if (contactSample.ankleVisibility >= 0.2f && !contactSample.ankleCenterY.isNaN()) {
+      max(0f, groundBaselineY - contactSample.ankleCenterY)
+    } else {
+      val baselineHipY = samples.maxOfOrNull { it.hipCenterY } ?: contactSample.hipCenterY
+      max(0f, baselineHipY - contactSample.hipCenterY)
+    }
+
+    val leapFeet = (ankleRiseUnits / max(0.04f, contactSample.shoulderSpan)) * ASSUMED_SHOULDER_WIDTH_FEET
+    return min(48f, max(0f, leapFeet * 12f))
+  }
+
+  private fun inferLandingStability(samples: List<WristSample>, contactSample: WristSample, aspectRatio: Float): String {
+    val postSamples = samples.filter { it.timestampMs >= contactSample.timestampMs }
+    if (postSamples.size < 2) {
+      return "steady"
+    }
+
+    val landingSample = postSamples.last()
+    val hipDrift = abs((landingSample.hipCenterX - contactSample.hipCenterX) * aspectRatio) / max(0.04f, contactSample.shoulderSpan)
+    val ankleDrift = if (
+      landingSample.ankleVisibility >= 0.2f &&
+      contactSample.ankleVisibility >= 0.2f &&
+      !landingSample.ankleCenterX.isNaN() &&
+      !contactSample.ankleCenterX.isNaN()
+    ) {
+      abs((landingSample.ankleCenterX - contactSample.ankleCenterX) * aspectRatio) / max(0.04f, contactSample.shoulderSpan)
+    } else {
+      0f
+    }
+    val landingStack = if (landingSample.ankleVisibility >= 0.2f && !landingSample.ankleCenterX.isNaN()) {
+      abs((landingSample.hipCenterX - landingSample.ankleCenterX) * aspectRatio) / max(0.04f, landingSample.shoulderSpan)
+    } else {
+      0f
+    }
+
+    return if (hipDrift > 0.34f || ankleDrift > 0.32f || landingStack > 0.24f) "off-balance" else "steady"
+  }
+
+  private fun computeReleaseFrames(
+    ballSamples: List<BallSample>,
+    contactSample: WristSample,
+    fps: Float,
+    inferenceIntervalMs: Long,
+  ): Int {
+    val firstFlightSample = ballSamples.firstOrNull { it.timestampMs > contactSample.timestampMs } ?: ballSamples.firstOrNull()
+    val releaseMs = if (firstFlightSample != null) {
+      max((inferenceIntervalMs / 2L).toFloat(), (firstFlightSample.timestampMs - contactSample.timestampMs).toFloat())
+    } else {
+      max(24f, inferenceIntervalMs.toFloat())
+    }
+
+    val derivedFrames = ((releaseMs / 1000f) * max(24f, fps)).toInt()
+    return min(24, max(1, derivedFrames))
+  }
+
+  private fun averageOrNaN(values: List<Float>): Float {
+    val usable = values.filter { !it.isNaN() }
+    return if (usable.isNotEmpty()) usable.average().toFloat() else Float.NaN
+  }
+
   private fun buildSample(
     landmarks: List<NormalizedLandmark>,
     timestampMs: Long,
@@ -496,6 +606,10 @@ class MotionTrackerModule(private val appContext: ReactApplicationContext) : Rea
     val shoulder = landmarks[shoulderIndex]
     val leftShoulder = landmarks[LEFT_SHOULDER_INDEX]
     val rightShoulder = landmarks[RIGHT_SHOULDER_INDEX]
+    val leftHip = landmarks[LEFT_HIP_INDEX]
+    val rightHip = landmarks[RIGHT_HIP_INDEX]
+    val leftAnkle = landmarks[LEFT_ANKLE_INDEX]
+    val rightAnkle = landmarks[RIGHT_ANKLE_INDEX]
 
     val visibility = minOf(
       optionalValue(wrist),
@@ -503,6 +617,8 @@ class MotionTrackerModule(private val appContext: ReactApplicationContext) : Rea
       optionalValue(shoulder),
       optionalValue(leftShoulder),
       optionalValue(rightShoulder),
+      optionalValue(leftHip),
+      optionalValue(rightHip),
     )
     if (visibility < 0.25f) {
       return null
@@ -521,12 +637,21 @@ class MotionTrackerModule(private val appContext: ReactApplicationContext) : Rea
 
     val smoothedX = (wrist.x() * 0.75f) + (elbow.x() * 0.25f)
     val smoothedY = (wrist.y() * 0.75f) + (elbow.y() * 0.25f)
+    val ankleVisibility = min(optionalValue(leftAnkle), optionalValue(rightAnkle))
+    val ankleCenterX = if (ankleVisibility >= 0.2f) (leftAnkle.x() + rightAnkle.x()) / 2f else Float.NaN
+    val ankleCenterY = if (ankleVisibility >= 0.2f) (leftAnkle.y() + rightAnkle.y()) / 2f else Float.NaN
 
     return WristSample(
       timestampMs = timestampMs,
       x = smoothedX,
       y = smoothedY,
       shoulderX = shoulder.x(),
+      shoulderY = shoulder.y(),
+      hipCenterX = (leftHip.x() + rightHip.x()) / 2f,
+      hipCenterY = (leftHip.y() + rightHip.y()) / 2f,
+      ankleCenterX = ankleCenterX,
+      ankleCenterY = ankleCenterY,
+      ankleVisibility = ankleVisibility,
       visibility = visibility,
       shoulderSpan = shoulderSpan,
     )
@@ -566,6 +691,12 @@ class MotionTrackerModule(private val appContext: ReactApplicationContext) : Rea
         x = window.map { it.x }.average().toFloat(),
         y = window.map { it.y }.average().toFloat(),
         shoulderX = window.map { it.shoulderX }.average().toFloat(),
+        shoulderY = window.map { it.shoulderY }.average().toFloat(),
+        hipCenterX = window.map { it.hipCenterX }.average().toFloat(),
+        hipCenterY = window.map { it.hipCenterY }.average().toFloat(),
+        ankleCenterX = averageOrNaN(window.map { it.ankleCenterX }),
+        ankleCenterY = averageOrNaN(window.map { it.ankleCenterY }),
+        ankleVisibility = window.map { it.ankleVisibility }.average().toFloat(),
         visibility = window.map { it.visibility }.average().toFloat(),
         shoulderSpan = window.map { it.shoulderSpan }.average().toFloat(),
       )
@@ -737,6 +868,12 @@ class MotionTrackerModule(private val appContext: ReactApplicationContext) : Rea
     val x: Float,
     val y: Float,
     val shoulderX: Float,
+    val shoulderY: Float,
+    val hipCenterX: Float,
+    val hipCenterY: Float,
+    val ankleCenterX: Float,
+    val ankleCenterY: Float,
+    val ankleVisibility: Float,
     val visibility: Float,
     val shoulderSpan: Float,
   )
@@ -770,7 +907,10 @@ class MotionTrackerModule(private val appContext: ReactApplicationContext) : Rea
     private const val RIGHT_ELBOW_INDEX = 14
     private const val LEFT_WRIST_INDEX = 15
     private const val RIGHT_WRIST_INDEX = 16
+    private const val LEFT_HIP_INDEX = 23
     private const val RIGHT_HIP_INDEX = 24
+    private const val LEFT_ANKLE_INDEX = 27
+    private const val RIGHT_ANKLE_INDEX = 28
     private const val FEET_PER_MPH_SECOND = 1.46667f
     private const val ASSUMED_SHOULDER_WIDTH_FEET = 1.35f
     private const val BALL_SPEED_TRANSFER_MULTIPLIER = 2.08f

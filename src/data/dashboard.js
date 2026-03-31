@@ -67,7 +67,7 @@ export const motionLabSections = [
       'Capture the athlete clip, tune the current sample fields, and launch the Motion Lab tools from the same rep.',
     bullets: [
       'Open camera or video library',
-      'Enter jump and release markers',
+      'Let Motion Lab fill the jump and release read automatically',
       'Run the current session analysis',
     ],
     openLabel: 'Open Recorder',
@@ -131,14 +131,14 @@ export const motionLabSections = [
 ];
 
 export const initialAnalysisInput = {
-  standingReachInches: '90',
-  contactReachInches: '121.4',
-  ballTravelFeet: '32',
-  releaseFrames: '15',
-  fps: '240',
-  hitchFrames: '3',
-  contactPoint: 'behind',
-  landingStability: 'off-balance',
+  standingReachInches: '',
+  contactReachInches: '',
+  ballTravelFeet: '',
+  releaseFrames: '',
+  fps: '',
+  hitchFrames: '',
+  contactPoint: 'ideal',
+  landingStability: 'steady',
 };
 
 export const initialCoachBoard = {

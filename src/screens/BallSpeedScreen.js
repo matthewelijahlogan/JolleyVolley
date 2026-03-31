@@ -1,4 +1,4 @@
-﻿import {ScrollView, StyleSheet, Text, View} from 'react-native';
+import {ScrollView, StyleSheet, Text, View} from 'react-native';
 
 import {NeonButton} from '../components/NeonButton';
 import {PageHeader} from '../components/PageHeader';
@@ -49,7 +49,7 @@ export function BallSpeedScreen({
         <Text style={styles.cardEyebrow}>MPH Tool</Text>
         <Text style={styles.cardTitle}>Ball Speed</Text>
         <Text style={styles.cardCopy}>
-          This tool stays tied to the active Motion Lab clip. It now prefers the direct tracked ball trail, falls back to the tracked hand estimate when needed, and only uses the manual flight sample when tracking is missing.
+          This tool stays tied to the active Motion Lab clip. It now prefers the direct tracked ball trail, falls back to the tracked hand estimate when needed, and only uses the derived clip-timing sample when tracking is missing.
         </Text>
       </View>
 
@@ -64,7 +64,7 @@ export function BallSpeedScreen({
             <MetricTile
               detail="Current source feeding the shared Motion Lab result"
               label="Source"
-              value={usingDirectBallTrack ? 'Ball Track' : usingTrackedEstimate ? 'Hand Track' : analysisResult.ballSpeedSource === 'manual-flight' ? 'Manual' : 'Pending'}
+              value={usingDirectBallTrack ? 'Ball Track' : usingTrackedEstimate ? 'Hand Track' : analysisResult.ballSpeedSource === 'derived-flight' ? 'Derived' : 'Pending'}
             />
             <MetricTile
               detail={usingDirectBallTrack ? 'Tracked ball frames used in the direct speed read' : usingTrackedEstimate ? 'Peak hand speed from the tracked swing window' : 'Frames to ball separation converted from FPS'}
@@ -85,10 +85,10 @@ export function BallSpeedScreen({
                 ? `The direct ball pass tracked ${directBallFrames.toFixed(0)} frames of ball flight and measured ${directBallSpeed.toFixed(1)} MPH off the current clip.`
                 : usingTrackedEstimate
                   ? `The ball was not fully locked, so Motion Lab is using the tracked hand-speed model for the current ${analysisResult.ballSpeedMph} MPH estimate.`
-                  : 'The current speed estimate is still coming from the manual ball-flight sample. Run Auto Track Swing to switch this tool to the computer-driven read.'}
+                  : 'The current speed estimate is still using the derived clip-timing fallback until the ball read locks on more frames.'}
             </Text>
             <Text style={styles.infoMeta}>Current clip: {selectedVideo?.fileName || 'No clip selected'}</Text>
-            <Text style={styles.infoMeta}>Tracking status: {trackingStatus === 'running' ? 'Tracking now' : trackingStatus === 'ready' ? 'Tracked clip ready' : 'Manual mode'}</Text>
+            <Text style={styles.infoMeta}>Tracking status: {trackingStatus === 'running' ? 'Tracking now' : trackingStatus === 'ready' ? 'Tracked clip ready' : 'Awaiting machine read'}</Text>
             {usingDirectBallTrack ? <Text style={styles.infoMeta}>Tracked ball travel: {directBallTravel.toFixed(1)} ft</Text> : null}
           </View>
         </>

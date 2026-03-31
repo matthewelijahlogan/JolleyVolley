@@ -123,17 +123,21 @@ function createFallbackBallTrail(contactPoint) {
 }
 
 export function runVideoAnalysis(input, tracking = null) {
-  const standingReachInches = toNumber(input.standingReachInches);
-  const contactReachInches = toNumber(input.contactReachInches);
+  const trackedStandingReachInches = readOptionalNumber(tracking?.standingReachInches);
+  const trackedContactReachInches = readOptionalNumber(tracking?.contactReachInches);
+  const trackedReleaseFrames = readOptionalNumber(tracking?.releaseFrames);
+  const trackedFps = readOptionalNumber(tracking?.fps);
+  const standingReachInches = trackedStandingReachInches ?? toNumber(input.standingReachInches);
+  const contactReachInches = trackedContactReachInches ?? toNumber(input.contactReachInches);
   const ballTravelFeetInput = toNumber(input.ballTravelFeet);
-  const releaseFrames = toNumber(input.releaseFrames);
-  const fps = toNumber(input.fps);
+  const releaseFrames = trackedReleaseFrames ?? toNumber(input.releaseFrames);
+  const fps = trackedFps ?? toNumber(input.fps);
   const trackedHitchFrames = readOptionalNumber(tracking?.hitchFrames);
   const hitchFrames = trackedHitchFrames ?? toNumber(input.hitchFrames);
   const trackingApplied = Array.isArray(tracking?.handTrail) && tracking.handTrail.length > 0;
   const ballTrackingApplied = Array.isArray(tracking?.ballTrail) && tracking.ballTrail.length > 1;
   const contactPoint = tracking?.contactPoint || input.contactPoint || 'ideal';
-  const landingStability = input.landingStability || 'steady';
+  const landingStability = tracking?.landingStability || input.landingStability || 'steady';
   const dominantHand = tracking?.dominantHand || 'right';
   const trackingQuality = readOptionalNumber(tracking?.trackingQuality) ?? 0;
   const trackedFrames = readOptionalNumber(tracking?.trackedFrames) ?? 0;
@@ -145,17 +149,16 @@ export function runVideoAnalysis(input, tracking = null) {
   const trackedEstimatedBallSpeedMph = readOptionalNumber(tracking?.estimatedBallSpeedMph);
   const peakHandSpeedMph = readOptionalNumber(tracking?.peakHandSpeedMph) ?? 0;
 
-  const hasStandingReach = hasRawValue(input.standingReachInches);
-  const hasContactReach = hasRawValue(input.contactReachInches);
-  const hasBallTravelInput = hasRawValue(input.ballTravelFeet);
-  const hasReleaseFrames = hasRawValue(input.releaseFrames);
-  const hasFps = hasRawValue(input.fps);
+  const hasStandingReach = trackedStandingReachInches !== null || hasRawValue(input.standingReachInches);
+  const hasContactReach = trackedContactReachInches !== null || hasRawValue(input.contactReachInches);
+  const hasReleaseFrames = trackedReleaseFrames !== null || hasRawValue(input.releaseFrames);
+  const hasFps = trackedFps !== null || hasRawValue(input.fps);
   const hasHitchFrames = trackingApplied || hasRawValue(input.hitchFrames);
 
   const verticalLeapInches = Math.max(0, contactReachInches - standingReachInches);
   const timeSeconds = fps > 0 ? releaseFrames / fps : 0;
   const feetPerSecond = timeSeconds > 0 ? ballTravelFeetInput / timeSeconds : 0;
-  const manualBallSpeedMph = feetPerSecond > 0 ? feetPerSecond / FEET_PER_MPH_SECOND : 0;
+  const derivedBallSpeedMph = feetPerSecond > 0 ? feetPerSecond / FEET_PER_MPH_SECOND : 0;
   const measuredBallTravelFeet = ballTrackingApplied && trackedBallTravelFeet !== null && trackedBallTravelFeet > 0
     ? trackedBallTravelFeet
     : ballTravelFeetInput;
@@ -164,15 +167,15 @@ export function runVideoAnalysis(input, tracking = null) {
     ? 'ball-track'
     : trackingApplied && trackedEstimatedBallSpeedMph !== null && trackedEstimatedBallSpeedMph > 0
       ? 'tracked-estimate'
-      : manualBallSpeedMph > 0
-        ? 'manual-flight'
+      : derivedBallSpeedMph > 0
+        ? 'derived-flight'
         : 'pending';
 
   const ballSpeedMph = ballSpeedSource === 'ball-track'
     ? trackedBallSpeedMph
     : ballSpeedSource === 'tracked-estimate'
       ? trackedEstimatedBallSpeedMph
-      : manualBallSpeedMph;
+      : derivedBallSpeedMph;
 
   let hitchSeverity = 'Low';
   if (hitchFrames >= 5) {
@@ -273,9 +276,9 @@ export function runVideoAnalysis(input, tracking = null) {
         )
       : createAssessment(
           'Swing Tracking',
-          'Manual mode',
+          'Awaiting AI read',
           'Waiting on auto-track',
-          'Run Auto Track Swing in the recorder to let the app pull the hand path from the active video.',
+          'Run Motion Lab analysis on a clip so the app can pull the hand path from the video automatically.',
           'warn',
         ),
     ballTrackingApplied
@@ -292,7 +295,7 @@ export function runVideoAnalysis(input, tracking = null) {
           'Ball Tracking',
           'Pending',
           'Waiting on direct ball track',
-          'Keep the ball visible after contact and run Auto Track Swing to generate a direct ball trail and direct MPH read.',
+          'Keep the ball visible after contact and run Motion Lab analysis to generate a direct ball trail and direct MPH read.',
           'warn',
         ),
     hasStandingReach
@@ -307,7 +310,7 @@ export function runVideoAnalysis(input, tracking = null) {
               : 'Baseline reach looks low. Recheck the measurement to keep the jump estimate accurate.',
           standingReachInches >= 92 ? 'good' : standingReachInches >= 84 ? 'neutral' : 'warn',
         )
-      : createAssessment('Standing Reach', 'Missing', 'Missing data', 'Enter a standing reach so the jump math has a real baseline.', 'warn'),
+      : createAssessment('Standing Reach', 'Missing', 'Missing data', 'Keep the athlete fully in frame so Motion Lab can estimate the standing reach baseline automatically.', 'warn'),
     hasContactReach
       ? createAssessment(
           'Contact Reach',
@@ -320,7 +323,7 @@ export function runVideoAnalysis(input, tracking = null) {
               : 'Contact point is on the lower side. More jump height and earlier reach can help.',
           contactReachInches >= 124 ? 'good' : contactReachInches >= 116 ? 'neutral' : 'warn',
         )
-      : createAssessment('Contact Reach', 'Missing', 'Missing data', 'Enter the max contact reach from the rep to score the jump window.', 'warn'),
+      : createAssessment('Contact Reach', 'Missing', 'Missing data', 'Keep the contact point and lower body visible so Motion Lab can estimate the contact reach automatically.', 'warn'),
     hasStandingReach && hasContactReach
       ? createAssessment(
           'Vertical Leap',
@@ -333,7 +336,7 @@ export function runVideoAnalysis(input, tracking = null) {
               : 'Vertical is modest for an attacking rep. Focus on approach rhythm and full hip load.',
           verticalLeapInches >= 30 ? 'good' : verticalLeapInches >= 24 ? 'neutral' : 'warn',
         )
-      : createAssessment('Vertical Leap', 'Pending', 'Needs inputs', 'Standing reach and contact reach are both needed to calculate the jump.', 'warn'),
+      : createAssessment('Vertical Leap', 'Pending', 'Needs inputs', 'Run Motion Lab on a full-body clip so the jump baseline and contact reach can be estimated from the video.', 'warn'),
 
     measuredBallTravelFeet > 0
       ? createAssessment(
@@ -349,7 +352,7 @@ export function runVideoAnalysis(input, tracking = null) {
                 : 'Ball path is short. A longer visible flight makes the speed estimate more trustworthy.',
           measuredBallTravelFeet >= 25 ? 'neutral' : 'warn',
         )
-      : createAssessment('Ball Travel', 'Missing', 'Missing data', 'Enter the visible flight distance or run direct ball tracking so the speed estimate has context.', 'warn'),
+      : createAssessment('Ball Travel', 'Missing', 'Missing data', 'Keep the ball visible after contact so Motion Lab can derive the flight distance automatically.', 'warn'),
     hasReleaseFrames && hasFps && timeSeconds > 0
       ? createAssessment(
           'Release Timing',
@@ -362,7 +365,7 @@ export function runVideoAnalysis(input, tracking = null) {
               : 'The release window is dragging. Trim wasted motion around contact for a cleaner strike.',
           timeSeconds <= 0.13 ? 'good' : 'warn',
         )
-      : createAssessment('Release Timing', 'Pending', 'Needs inputs', 'Release frames and FPS are both required to calculate timing when manual timing is being used.', 'warn'),
+      : createAssessment('Release Timing', 'Pending', 'Needs inputs', 'Motion Lab needs a cleaner tracked release window to auto-fill the timing from the clip.', 'warn'),
     peakHandSpeedMph > 0
       ? createAssessment(
           'Peak Hand Speed',
@@ -375,7 +378,7 @@ export function runVideoAnalysis(input, tracking = null) {
               : 'The tracked hand speed is on the light side. A faster final turn should help the strike.',
           peakHandSpeedMph >= 20 ? 'good' : peakHandSpeedMph >= 15 ? 'neutral' : 'warn',
         )
-      : createAssessment('Peak Hand Speed', 'Pending', 'Needs auto-track', 'Run Auto Track Swing to estimate peak hand speed from the clip.', 'warn'),
+      : createAssessment('Peak Hand Speed', 'Pending', 'Needs auto-track', 'Run Motion Lab on the clip so the hand-speed estimate can be filled automatically.', 'warn'),
     ballSpeedSource !== 'pending'
       ? createAssessment(
           'Ball Speed',
@@ -400,7 +403,7 @@ export function runVideoAnalysis(input, tracking = null) {
                   : 'Speed looks light. More transfer through the torso and hand finish should help.',
           ballSpeedMph >= 50 ? 'good' : ballSpeedMph >= 35 ? 'neutral' : 'warn',
         )
-      : createAssessment('Ball Speed', 'Pending', 'Needs inputs', 'Run Auto Track Swing or enter ball travel, release frames, and FPS for the MPH estimate.', 'warn'),
+      : createAssessment('Ball Speed', 'Pending', 'Needs inputs', 'Run Motion Lab on a clip with visible ball flight so the MPH estimate can be filled automatically.', 'warn'),
     hasHitchFrames
       ? createAssessment(
           'Hitch Frames',
@@ -419,7 +422,7 @@ export function runVideoAnalysis(input, tracking = null) {
                 : 'The swing path reads clean with minimal interruption.',
           hitchFrames >= 5 ? 'alert' : hitchFrames >= 3 ? 'warn' : 'good',
         )
-      : createAssessment('Hitch Frames', 'Missing', 'Missing data', 'Enter the visible pause frames to score the hand path cleanly.', 'warn'),
+      : createAssessment('Hitch Frames', 'Missing', 'Missing data', 'Run Motion Lab so the hitch frames are scored automatically from the tracked hand path.', 'warn'),
     createAssessment(
       'Contact Point',
       formatContactPoint(contactPoint),

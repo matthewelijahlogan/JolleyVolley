@@ -1,4 +1,4 @@
-﻿import {ScrollView, StyleSheet, Text, View} from 'react-native';
+import {ScrollView, StyleSheet, Text, View} from 'react-native';
 
 import {NeonButton} from '../components/NeonButton';
 import {PageHeader} from '../components/PageHeader';
@@ -24,7 +24,7 @@ export function AboutScreen({onGoHome, onOpenScreen}) {
 
       <View style={styles.infoCard}>
         <Text style={styles.infoTitle}>What Comes Next</Text>
-        <Text style={styles.infoCopy}>The next layer is deeper automated pose and ball tracking so the app can derive more of the motion markers directly from the video instead of relying on manual input alone.</Text>
+        <Text style={styles.infoCopy}>Motion Lab now fills the core swing, ball, timing, and jump fields from the video itself, and the next layer is improving how much of that read can be made even more precise from deeper on-device tracking.</Text>
       </View>
 
       <View style={styles.infoCard}>
