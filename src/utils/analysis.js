@@ -1,8 +1,13 @@
-﻿const FEET_PER_MPH_SECOND = 1.46667;
+const FEET_PER_MPH_SECOND = 1.46667;
 
 function toNumber(value) {
   const parsed = parseFloat(value);
   return Number.isFinite(parsed) ? parsed : 0;
+}
+
+function readOptionalNumber(value) {
+  const parsed = parseFloat(value);
+  return Number.isFinite(parsed) ? parsed : null;
 }
 
 function toFixedNumber(value, digits) {
@@ -44,27 +49,64 @@ function createAssessment(label, value, status, note, tone = 'neutral') {
   };
 }
 
-export function runVideoAnalysis(input) {
+function clampUnit(value) {
+  return Math.min(0.98, Math.max(0.02, value));
+}
+
+function normalizeOverlayPoint(point) {
+  if (!point) {
+    return null;
+  }
+
+  if (typeof point.left === 'string' && typeof point.top === 'string') {
+    return point;
+  }
+
+  const x = clampUnit(toNumber(point.x));
+  const y = clampUnit(toNumber(point.y));
+
+  return {
+    left: `${toFixedNumber(x * 100, 1)}%`,
+    top: `${toFixedNumber(y * 100, 1)}%`,
+  };
+}
+
+export function runVideoAnalysis(input, tracking = null) {
   const standingReachInches = toNumber(input.standingReachInches);
   const contactReachInches = toNumber(input.contactReachInches);
   const ballTravelFeet = toNumber(input.ballTravelFeet);
   const releaseFrames = toNumber(input.releaseFrames);
   const fps = toNumber(input.fps);
-  const hitchFrames = toNumber(input.hitchFrames);
-  const contactPoint = input.contactPoint || 'ideal';
+  const trackedHitchFrames = readOptionalNumber(tracking?.hitchFrames);
+  const hitchFrames = trackedHitchFrames ?? toNumber(input.hitchFrames);
+  const trackingApplied = Array.isArray(tracking?.handTrail) && tracking.handTrail.length > 0;
+  const contactPoint = tracking?.contactPoint || input.contactPoint || 'ideal';
   const landingStability = input.landingStability || 'steady';
+  const dominantHand = tracking?.dominantHand || 'right';
+  const trackingQuality = readOptionalNumber(tracking?.trackingQuality) ?? 0;
+  const trackedFrames = readOptionalNumber(tracking?.trackedFrames) ?? 0;
+  const processedFrames = readOptionalNumber(tracking?.processedFrames) ?? 0;
+  const trackedBallSpeedMph = readOptionalNumber(tracking?.estimatedBallSpeedMph);
+  const peakHandSpeedMph = readOptionalNumber(tracking?.peakHandSpeedMph) ?? 0;
 
   const hasStandingReach = hasRawValue(input.standingReachInches);
   const hasContactReach = hasRawValue(input.contactReachInches);
   const hasBallTravel = hasRawValue(input.ballTravelFeet);
   const hasReleaseFrames = hasRawValue(input.releaseFrames);
   const hasFps = hasRawValue(input.fps);
-  const hasHitchFrames = hasRawValue(input.hitchFrames);
+  const hasHitchFrames = trackingApplied || hasRawValue(input.hitchFrames);
 
   const verticalLeapInches = Math.max(0, contactReachInches - standingReachInches);
   const timeSeconds = fps > 0 ? releaseFrames / fps : 0;
   const feetPerSecond = timeSeconds > 0 ? ballTravelFeet / timeSeconds : 0;
-  const ballSpeedMph = feetPerSecond > 0 ? feetPerSecond / FEET_PER_MPH_SECOND : 0;
+  const manualBallSpeedMph = feetPerSecond > 0 ? feetPerSecond / FEET_PER_MPH_SECOND : 0;
+  const usingTrackedBallSpeed = trackingApplied && trackedBallSpeedMph !== null && trackedBallSpeedMph > 0;
+  const ballSpeedMph = usingTrackedBallSpeed ? trackedBallSpeedMph : manualBallSpeedMph;
+  const ballSpeedSource = usingTrackedBallSpeed
+    ? 'tracked-estimate'
+    : manualBallSpeedMph > 0
+      ? 'manual-flight'
+      : 'pending';
 
   let hitchSeverity = 'Low';
   if (hitchFrames >= 5) {
@@ -75,10 +117,19 @@ export function runVideoAnalysis(input) {
 
   const advice = [];
 
+  if (trackingApplied && trackingQuality < 0.35) {
+    advice.push({
+      title: 'Capture a cleaner swing angle',
+      body: 'Tracking quality came in light on this clip. A wider side view with the whole arm visible will help lock the hand path more reliably.',
+    });
+  }
+
   if (hitchFrames >= 3) {
     advice.push({
       title: 'Smooth the arm path',
-      body: 'The swing shows a visible pause before or through contact. Focus on one continuous acceleration from load to ball.',
+      body: trackingApplied
+        ? 'The tracked hand path shows a visible pause through the zone. Focus on one continuous acceleration from load to contact.'
+        : 'The swing shows a visible pause before or through contact. Focus on one continuous acceleration from load to ball.',
     });
   }
 
@@ -110,10 +161,12 @@ export function runVideoAnalysis(input) {
     });
   }
 
-  if (ballSpeedMph < 35) {
+  if (ballSpeedMph > 0 && ballSpeedMph < 35) {
     advice.push({
-      title: 'Transfer force through the ball',
-      body: 'Ball speed looks modest for this rep. Try matching approach speed with a cleaner arm whip and stronger finish.',
+      title: usingTrackedBallSpeed ? 'Speed up the hand through contact' : 'Transfer force through the ball',
+      body: usingTrackedBallSpeed
+        ? 'The tracked hand-speed model is reading a light strike. Try a faster last-arm turn and a stronger finish through the ball.'
+        : 'Ball speed looks modest for this rep. Try matching approach speed with a cleaner arm whip and stronger finish.',
     });
   }
 
@@ -124,7 +177,7 @@ export function runVideoAnalysis(input) {
     });
   }
 
-  const handTrail = contactPoint === 'behind'
+  const fallbackHandTrail = contactPoint === 'behind'
     ? [
         {left: '18%', top: '70%'},
         {left: '33%', top: hitchFrames >= 3 ? '62%' : '58%'},
@@ -145,6 +198,10 @@ export function runVideoAnalysis(input) {
           {left: '61%', top: '33%'},
         ];
 
+  const handTrail = trackingApplied
+    ? tracking.handTrail.map(normalizeOverlayPoint).filter(Boolean)
+    : fallbackHandTrail;
+
   const ballTrail = contactPoint === 'behind'
     ? [
         {left: '61%', top: '35%'},
@@ -164,6 +221,23 @@ export function runVideoAnalysis(input) {
         ];
 
   const assessments = [
+    trackingApplied
+      ? createAssessment(
+          'Swing Tracking',
+          `${dominantHand} hand`,
+          trackingQuality >= 0.65 ? 'Locked in' : trackingQuality >= 0.4 ? 'Usable track' : 'Light track',
+          processedFrames > 0
+            ? `The computer tracked ${trackedFrames}/${processedFrames} sampled video frames and fed the hand path into the current Motion Lab session.`
+            : 'The computer tracked the active clip and fed the hand path into the current Motion Lab session.',
+          trackingQuality >= 0.65 ? 'good' : trackingQuality >= 0.4 ? 'neutral' : 'warn',
+        )
+      : createAssessment(
+          'Swing Tracking',
+          'Manual mode',
+          'Waiting on auto-track',
+          'Run Auto Track Swing in the recorder to let the app pull the hand path from the active video.',
+          'warn',
+        ),
     hasStandingReach
       ? createAssessment(
           'Standing Reach',
@@ -229,29 +303,41 @@ export function runVideoAnalysis(input) {
           timeSeconds <= 0.13 ? 'good' : 'warn',
         )
       : createAssessment('Release Timing', 'Pending', 'Needs inputs', 'Release frames and FPS are both required to calculate timing.', 'warn'),
-    hasBallTravel && hasReleaseFrames && hasFps && ballSpeedMph > 0
+    ballSpeedSource !== 'pending'
       ? createAssessment(
           'Ball Speed',
           `${toFixedNumber(ballSpeedMph, 1)} MPH`,
           ballSpeedMph >= 50 ? 'Heavy swing' : ballSpeedMph >= 35 ? 'Playable pace' : 'Needs more force',
-          ballSpeedMph >= 50
-            ? 'The ball is jumping off the hand with strong pace.'
-            : ballSpeedMph >= 35
-              ? 'Ball speed is workable and can improve with cleaner sequencing.'
-              : 'Speed looks light. More transfer through the torso and hand finish should help.',
+          ballSpeedSource === 'tracked-estimate'
+            ? ballSpeedMph >= 50
+              ? 'The tracked hand-speed model reads a heavy strike coming off the swing.'
+              : ballSpeedMph >= 35
+                ? 'The tracked hand-speed model reads a playable ball with room for more pace.'
+                : 'The tracked hand-speed model reads a light strike. A faster finish should help.'
+            : ballSpeedMph >= 50
+              ? 'The ball is jumping off the hand with strong pace.'
+              : ballSpeedMph >= 35
+                ? 'Ball speed is workable and can improve with cleaner sequencing.'
+                : 'Speed looks light. More transfer through the torso and hand finish should help.',
           ballSpeedMph >= 50 ? 'good' : ballSpeedMph >= 35 ? 'neutral' : 'warn',
         )
-      : createAssessment('Ball Speed', 'Pending', 'Needs inputs', 'Ball travel, release frames, and FPS are needed for the MPH estimate.', 'warn'),
+      : createAssessment('Ball Speed', 'Pending', 'Needs inputs', 'Run Auto Track Swing or enter ball travel, release frames, and FPS for the MPH estimate.', 'warn'),
     hasHitchFrames
       ? createAssessment(
           'Hitch Frames',
           formatFrames(hitchFrames),
           hitchFrames >= 5 ? 'Major hitch' : hitchFrames >= 3 ? 'Minor hitch' : 'Clean path',
-          hitchFrames >= 5
-            ? 'The arm path has a clear pause that likely costs speed and repeatability.'
-            : hitchFrames >= 3
-              ? 'There is some interruption in the swing path, but it looks correctable.'
-              : 'The swing path reads clean with minimal interruption.',
+          trackingApplied
+            ? hitchFrames >= 5
+              ? 'The tracked hand path shows a clear pause that is likely costing speed and repeatability.'
+              : hitchFrames >= 3
+                ? 'The tracked hand path shows some interruption through the zone, but it looks correctable.'
+                : 'The tracked hand path reads clean with minimal interruption.'
+            : hitchFrames >= 5
+              ? 'The arm path has a clear pause that likely costs speed and repeatability.'
+              : hitchFrames >= 3
+                ? 'There is some interruption in the swing path, but it looks correctable.'
+                : 'The swing path reads clean with minimal interruption.',
           hitchFrames >= 5 ? 'alert' : hitchFrames >= 3 ? 'warn' : 'good',
         )
       : createAssessment('Hitch Frames', 'Missing', 'Missing data', 'Enter the visible pause frames to score the hand path cleanly.', 'warn'),
@@ -259,11 +345,17 @@ export function runVideoAnalysis(input) {
       'Contact Point',
       formatContactPoint(contactPoint),
       contactPoint === 'ideal' ? 'On time' : 'Timing drift',
-      contactPoint === 'behind'
-        ? 'Contact is late. Reach sooner and rotate a touch earlier.'
-        : contactPoint === 'in-front'
-          ? 'Contact is drifting too far forward. Hold posture and let the ball arrive.'
-          : 'Contact timing looks centered for this rep.',
+      trackingApplied
+        ? contactPoint === 'behind'
+          ? 'The tracked contact position is reading late. Reach sooner and rotate a touch earlier.'
+          : contactPoint === 'in-front'
+            ? 'The tracked contact position is drifting too far forward. Hold posture and let the ball arrive.'
+            : 'The tracked contact position looks centered for this rep.'
+        : contactPoint === 'behind'
+          ? 'Contact is late. Reach sooner and rotate a touch earlier.'
+          : contactPoint === 'in-front'
+            ? 'Contact is drifting too far forward. Hold posture and let the ball arrive.'
+            : 'Contact timing looks centered for this rep.',
       contactPoint === 'ideal' ? 'good' : 'warn',
     ),
     createAssessment(
@@ -280,10 +372,17 @@ export function runVideoAnalysis(input) {
   return {
     verticalLeapInches: toFixedNumber(verticalLeapInches, 1),
     ballSpeedMph: toFixedNumber(ballSpeedMph, 1),
+    peakHandSpeedMph: toFixedNumber(peakHandSpeedMph, 1),
+    ballSpeedSource,
     hitchFrames: toFixedNumber(hitchFrames, 0),
     hitchSeverity,
     contactPoint,
     landingStability,
+    trackingApplied,
+    trackingQuality: toFixedNumber(trackingQuality, 2),
+    dominantHand,
+    trackedFrames: toFixedNumber(trackedFrames, 0),
+    processedFrames: toFixedNumber(processedFrames, 0),
     summary: `Vertical ${toFixedNumber(verticalLeapInches, 1)} in | Ball ${toFixedNumber(ballSpeedMph, 1)} MPH | Hitch ${toFixedNumber(hitchFrames, 0)} frames`,
     advice,
     assessments,

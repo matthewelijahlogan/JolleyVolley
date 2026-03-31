@@ -4,7 +4,9 @@ import {NeonButton} from '../components/NeonButton';
 import {PageHeader} from '../components/PageHeader';
 import {colors, neonShadow, radii, spacing} from '../theme/theme';
 
-export function FeedbackScreen({analysisResult, onGoHome, onOpenScreen}) {
+export function FeedbackScreen({analysisResult, onGoHome, onOpenScreen, selectedVideo, trackingStatus}) {
+  const usingTrackedSession = analysisResult?.trackingApplied;
+
   return (
     <ScrollView style={styles.safeArea} contentContainerStyle={styles.content}>
       <PageHeader onHomePress={onGoHome} />
@@ -18,12 +20,25 @@ export function FeedbackScreen({analysisResult, onGoHome, onOpenScreen}) {
       </View>
 
       {analysisResult ? (
-        analysisResult.advice.map(item => (
-          <View key={item.title} style={styles.adviceCard}>
-            <Text style={styles.adviceTitle}>{item.title}</Text>
-            <Text style={styles.adviceBody}>{item.body}</Text>
+        <>
+          <View style={styles.sourceCard}>
+            <Text style={styles.sourceTitle}>Current Feedback Source</Text>
+            <Text style={styles.sourceCopy}>
+              {usingTrackedSession
+                ? 'These cues are being generated from the tracked swing path on the active clip, plus the current session inputs.'
+                : 'These cues are still using the active Motion Lab session inputs. Run Auto Track Swing to feed the tracked hand path into the advice.'}
+            </Text>
+            <Text style={styles.sourceMeta}>Current clip: {selectedVideo?.fileName || 'No clip selected'}</Text>
+            <Text style={styles.sourceMeta}>Tracking status: {trackingStatus === 'running' ? 'Tracking now' : trackingStatus === 'ready' ? 'Tracked clip ready' : 'Manual mode'}</Text>
           </View>
-        ))
+
+          {analysisResult.advice.map(item => (
+            <View key={item.title} style={styles.adviceCard}>
+              <Text style={styles.adviceTitle}>{item.title}</Text>
+              <Text style={styles.adviceBody}>{item.body}</Text>
+            </View>
+          ))}
+        </>
       ) : (
         <View style={styles.emptyCard}>
           <Text style={styles.emptyTitle}>No feedback yet</Text>
@@ -77,6 +92,31 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
     fontSize: 14,
     lineHeight: 22,
+  },
+  sourceCard: {
+    borderRadius: radii.md,
+    borderWidth: 1,
+    borderColor: 'rgba(126, 249, 255, 0.18)',
+    backgroundColor: 'rgba(17, 11, 28, 0.88)',
+    padding: spacing.md,
+    marginBottom: spacing.md,
+  },
+  sourceTitle: {
+    color: colors.primarySoft,
+    fontSize: 15,
+    fontWeight: '700',
+    marginBottom: spacing.xs,
+  },
+  sourceCopy: {
+    color: colors.textMuted,
+    fontSize: 14,
+    lineHeight: 21,
+    marginBottom: spacing.sm,
+  },
+  sourceMeta: {
+    color: colors.textDim,
+    fontSize: 12,
+    lineHeight: 18,
   },
   adviceCard: {
     borderRadius: radii.md,

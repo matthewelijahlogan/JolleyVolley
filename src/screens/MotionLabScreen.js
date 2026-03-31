@@ -1,4 +1,4 @@
-﻿import {Alert, Pressable, ScrollView, StyleSheet, Text, TextInput, View} from 'react-native';
+import {Alert, Pressable, ScrollView, StyleSheet, Text, TextInput, View} from 'react-native';
 import {launchCamera, launchImageLibrary} from 'react-native-image-picker';
 import Video from 'react-native-video';
 
@@ -50,7 +50,11 @@ export function MotionLabScreen({
   onOpenScreen,
   onRunAnalysis,
   onSelectVideo,
+  onTrackSwing,
   selectedVideo,
+  trackingError,
+  trackingResult,
+  trackingStatus,
 }) {
   const handleCameraLaunch = async () => {
     const result = await launchCamera({
@@ -94,7 +98,10 @@ export function MotionLabScreen({
     }
   };
 
-  const previewAssessments = analysisResult?.assessments?.slice(0, 3) || [];
+  const previewAssessments = (analysisResult?.assessments || [])
+    .filter(item => ['Swing Tracking', 'Ball Speed', 'Hitch Frames', 'Contact Point'].includes(item.label))
+    .slice(0, 4);
+  const trackingReady = trackingStatus === 'ready' && trackingResult;
 
   return (
     <ScrollView style={styles.safeArea} contentContainerStyle={styles.content}>
@@ -104,7 +111,7 @@ export function MotionLabScreen({
         <Text style={styles.cardEyebrow}>Capture</Text>
         <Text style={styles.cardTitle}>Recorder</Text>
         <Text style={styles.cardCopy}>
-          Record or import a rep, set the sample fields, then open the Swing Tracker, Ball Speed, and Motion Stats tools from the same clip.
+          Record or import a rep, run Auto Track Swing, and let the same tracked session feed Swing Tracker, Ball Speed, Motion Stats, and Feedback.
         </Text>
       </View>
 
@@ -135,6 +142,35 @@ export function MotionLabScreen({
           <Text style={styles.emptyCopy}>
             No clip selected yet. Record a player or import a rep from the phone to start the Motion Lab tools.
           </Text>
+        )}
+      </View>
+
+      <View style={styles.buttonStack}>
+        <NeonButton label={trackingStatus === 'running' ? 'Tracking Swing...' : 'Auto Track Swing'} onPress={onTrackSwing} />
+      </View>
+
+      <View style={styles.trackerCard}>
+        <Text style={styles.sectionLabel}>Swing Tracker Status</Text>
+        {trackingStatus === 'running' ? (
+          <Text style={styles.trackerCopy}>The app is sampling the selected video and building the current hand path through the zone.</Text>
+        ) : trackingReady ? (
+          <>
+            <Text style={styles.trackerTitle}>Tracked {trackingResult.dominantHand} hand</Text>
+            <Text style={styles.trackerCopy}>
+              {trackingResult.trackedFrames}/{trackingResult.processedFrames} sampled frames locked the swing path. Hitch frames, contact timing, and the current speed estimate have been fed into the active session.
+            </Text>
+            <Text style={styles.trackerMeta}>Tracking quality: {(Number(trackingResult.trackingQuality || 0) * 100).toFixed(0)}%</Text>
+            {Number(trackingResult.estimatedBallSpeedMph || 0) > 0 ? (
+              <Text style={styles.trackerMeta}>Tracked ball-speed estimate: {Number(trackingResult.estimatedBallSpeedMph).toFixed(1)} MPH</Text>
+            ) : null}
+          </>
+        ) : trackingError ? (
+          <>
+            <Text style={styles.trackerTitle}>Tracking needs another pass</Text>
+            <Text style={styles.trackerCopy}>{trackingError}</Text>
+          </>
+        ) : (
+          <Text style={styles.trackerCopy}>Auto Track Swing has not been run on the current clip yet. The app will stay in manual mode until you run it.</Text>
         )}
       </View>
 
@@ -256,6 +292,14 @@ const styles = StyleSheet.create({
     marginBottom: spacing.lg,
     ...neonShadow,
   },
+  trackerCard: {
+    borderRadius: radii.lg,
+    borderWidth: 1,
+    borderColor: 'rgba(126, 249, 255, 0.22)',
+    backgroundColor: 'rgba(17, 11, 28, 0.94)',
+    padding: spacing.lg,
+    marginBottom: spacing.lg,
+  },
   cardEyebrow: {
     color: colors.accent,
     fontSize: 12,
@@ -274,6 +318,24 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
     fontSize: 14,
     lineHeight: 22,
+  },
+  trackerTitle: {
+    color: colors.text,
+    fontFamily: 'Bangers',
+    fontSize: 28,
+    letterSpacing: 0.7,
+    marginBottom: spacing.xs,
+  },
+  trackerCopy: {
+    color: colors.textMuted,
+    fontSize: 14,
+    lineHeight: 21,
+  },
+  trackerMeta: {
+    color: colors.primarySoft,
+    fontSize: 13,
+    fontWeight: '700',
+    marginTop: spacing.sm,
   },
   buttonStack: {
     gap: spacing.sm,

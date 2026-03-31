@@ -27,7 +27,7 @@ function TrackerStat({label, value}) {
   );
 }
 
-export function PlaybackScreen({analysisResult, onGoHome, onOpenScreen, selectedVideo}) {
+export function PlaybackScreen({analysisResult, onGoHome, onOpenScreen, selectedVideo, trackingStatus}) {
   const handTrail = analysisResult?.overlayProfile?.handTrail || [];
   const ballTrail = analysisResult?.overlayProfile?.ballTrail || [];
   const hitchPoint = analysisResult?.hitchFrames >= 3 ? handTrail[Math.min(1, handTrail.length - 1)] : null;
@@ -40,7 +40,9 @@ export function PlaybackScreen({analysisResult, onGoHome, onOpenScreen, selected
         <Text style={styles.cardEyebrow}>Visual Tool</Text>
         <Text style={styles.cardTitle}>Swing Tracker</Text>
         <Text style={styles.cardCopy}>
-          This tool shows the hand path through the hitting zone, highlights the current hitch severity, and keeps the tracker tied to the active rep.
+          {analysisResult?.trackingApplied
+            ? 'This view is using the tracked hand path pulled from the current clip and feeding the same result back into the Motion Lab session.'
+            : 'This view is using the current Motion Lab session profile. Run Auto Track Swing in the recorder to replace the hand path with a tracked clip sample.'}
         </Text>
       </View>
 
@@ -75,10 +77,10 @@ export function PlaybackScreen({analysisResult, onGoHome, onOpenScreen, selected
       {analysisResult ? (
         <>
           <View style={styles.statGrid}>
+            <TrackerStat label="Tracking" value={analysisResult.trackingApplied ? 'Auto' : 'Manual'} />
             <TrackerStat label="Hitch Severity" value={analysisResult.hitchSeverity} />
             <TrackerStat label="Hitch Frames" value={`${analysisResult.hitchFrames}`} />
             <TrackerStat label="Contact Point" value={analysisResult.contactPoint} />
-            <TrackerStat label="Landing" value={analysisResult.landingStability} />
           </View>
 
           <View style={styles.infoCard}>
@@ -89,6 +91,13 @@ export function PlaybackScreen({analysisResult, onGoHome, onOpenScreen, selected
                 : analysisResult.hitchFrames >= 3
                   ? 'There is a visible hitch in the motion, but the path is still recoverable with cleaner sequencing.'
                   : 'The hand path is moving cleanly through the zone with minimal interruption.'}
+            </Text>
+            <Text style={styles.infoMeta}>
+              {analysisResult.trackingApplied
+                ? `${analysisResult.dominantHand} hand tracked | ${analysisResult.trackedFrames}/${analysisResult.processedFrames} sampled frames`
+                : trackingStatus === 'running'
+                  ? 'Swing tracking is still processing the current clip.'
+                  : 'This overlay is still using the manual session profile.'}
             </Text>
           </View>
         </>
@@ -286,6 +295,12 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
     fontSize: 14,
     lineHeight: 21,
+    marginBottom: spacing.sm,
+  },
+  infoMeta: {
+    color: colors.textDim,
+    fontSize: 12,
+    lineHeight: 18,
   },
   buttonStack: {
     gap: spacing.sm,

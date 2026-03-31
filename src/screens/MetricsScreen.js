@@ -1,4 +1,4 @@
-﻿import {ScrollView, StyleSheet, Text, View} from 'react-native';
+import {ScrollView, StyleSheet, Text, View} from 'react-native';
 
 import {NeonButton} from '../components/NeonButton';
 import {PageHeader} from '../components/PageHeader';
@@ -63,7 +63,7 @@ function AssessmentCard({item}) {
   );
 }
 
-export function MetricsScreen({analysisInput, analysisResult, onGoHome, onOpenScreen, selectedVideo}) {
+export function MetricsScreen({analysisInput, analysisResult, onGoHome, onOpenScreen, selectedVideo, trackingStatus}) {
   return (
     <ScrollView style={styles.safeArea} contentContainerStyle={styles.content}>
       <PageHeader onHomePress={onGoHome} />
@@ -85,7 +85,7 @@ export function MetricsScreen({analysisInput, analysisResult, onGoHome, onOpenSc
               value={`${analysisResult.verticalLeapInches} in`}
             />
             <MetricTile
-              detail="Ball travel distance over release time"
+              detail={analysisResult.ballSpeedSource === 'tracked-estimate' ? 'Auto-estimated from the tracked swing model' : 'Ball travel distance over release time'}
               label="Ball Speed"
               value={`${analysisResult.ballSpeedMph} MPH`}
             />
@@ -125,6 +125,9 @@ export function MetricsScreen({analysisInput, analysisResult, onGoHome, onOpenSc
             <Text style={styles.formulaCopy}>Contact point: {analysisInput.contactPoint}</Text>
             <Text style={styles.formulaCopy}>Landing stability: {analysisInput.landingStability}</Text>
             <Text style={styles.formulaCopy}>Current clip: {selectedVideo?.fileName || 'None selected'}</Text>
+            <Text style={styles.formulaCopy}>Ball speed source: {analysisResult.ballSpeedSource === 'tracked-estimate' ? 'Tracked swing model' : analysisResult.ballSpeedSource === 'manual-flight' ? 'Manual ball-flight sample' : 'Pending'}</Text>
+            <Text style={styles.formulaCopy}>Peak hand speed: {analysisResult.peakHandSpeedMph || '--'} MPH</Text>
+            <Text style={styles.formulaCopy}>Tracking status: {trackingStatus === 'running' ? 'Tracking now' : trackingStatus === 'ready' ? 'Tracked clip ready' : 'Manual mode'}</Text>
           </View>
         </>
       ) : (

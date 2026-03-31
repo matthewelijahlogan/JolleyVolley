@@ -19,11 +19,22 @@ function MetricTile({label, value, detail}) {
   );
 }
 
-export function BallSpeedScreen({analysisInput, analysisResult, onGoHome, onOpenScreen, selectedVideo}) {
+export function BallSpeedScreen({
+  analysisInput,
+  analysisResult,
+  onGoHome,
+  onOpenScreen,
+  selectedVideo,
+  trackingResult,
+  trackingStatus,
+}) {
   const releaseFrames = toNumber(analysisInput.releaseFrames);
   const fps = toNumber(analysisInput.fps);
   const ballTravelFeet = toNumber(analysisInput.ballTravelFeet);
   const releaseTimeSeconds = fps > 0 ? releaseFrames / fps : 0;
+  const usingTrackedBallSpeed = analysisResult?.ballSpeedSource === 'tracked-estimate';
+  const trackingQuality = Number(analysisResult?.trackingQuality || trackingResult?.trackingQuality || 0);
+  const trackedBallSpeed = Number(trackingResult?.estimatedBallSpeedMph || analysisResult?.ballSpeedMph || 0);
 
   return (
     <ScrollView style={styles.safeArea} contentContainerStyle={styles.content}>
@@ -33,7 +44,7 @@ export function BallSpeedScreen({analysisInput, analysisResult, onGoHome, onOpen
         <Text style={styles.cardEyebrow}>MPH Tool</Text>
         <Text style={styles.cardTitle}>Ball Speed</Text>
         <Text style={styles.cardCopy}>
-          This tool isolates the ball-speed side of Motion Lab so the coach can focus on release timing, sample distance, and the current MPH estimate.
+          This tool stays tied to the active Motion Lab clip. It will use the tracked swing-speed model when Auto Track Swing is available, or fall back to the manual flight sample when needed.
         </Text>
       </View>
 
@@ -41,33 +52,36 @@ export function BallSpeedScreen({analysisInput, analysisResult, onGoHome, onOpen
         <>
           <View style={styles.metricGrid}>
             <MetricTile
-              detail="Current ball speed estimate from the active clip sample"
+              detail={usingTrackedBallSpeed ? 'Auto-estimated from the tracked swing in the active clip' : 'Calculated from ball travel and release time'}
               label="MPH"
               value={`${analysisResult.ballSpeedMph}`}
             />
             <MetricTile
-              detail="Frames to ball separation converted from FPS"
-              label="Release Time"
-              value={`${releaseTimeSeconds.toFixed(3)} s`}
+              detail={usingTrackedBallSpeed ? 'Current source feeding the shared Motion Lab result' : 'The current session is still using the manual sample path'}
+              label="Source"
+              value={usingTrackedBallSpeed ? 'Tracked' : analysisResult.ballSpeedSource === 'manual-flight' ? 'Manual' : 'Pending'}
             />
             <MetricTile
-              detail="Distance sample used in the current MPH calculation"
-              label="Ball Travel"
-              value={`${ballTravelFeet.toFixed(1)} ft`}
+              detail={usingTrackedBallSpeed ? 'Peak hand speed from the tracked swing window' : 'Frames to ball separation converted from FPS'}
+              label={usingTrackedBallSpeed ? 'Hand Speed' : 'Release Time'}
+              value={usingTrackedBallSpeed ? `${analysisResult.peakHandSpeedMph} MPH` : `${releaseTimeSeconds.toFixed(3)} s`}
             />
             <MetricTile
-              detail="Frames per second from the current video sample"
-              label="FPS"
-              value={`${fps.toFixed(0)}`}
+              detail={usingTrackedBallSpeed ? 'Share of sampled frames the tracker locked onto' : 'Distance sample used in the current MPH calculation'}
+              label={usingTrackedBallSpeed ? 'Track Quality' : 'Ball Travel'}
+              value={usingTrackedBallSpeed ? `${Math.round(trackingQuality * 100)}%` : `${ballTravelFeet.toFixed(1)} ft`}
             />
           </View>
 
           <View style={styles.infoCard}>
-            <Text style={styles.infoTitle}>How This Tool Works</Text>
+            <Text style={styles.infoTitle}>Current Speed Read</Text>
             <Text style={styles.infoCopy}>
-              The current speed estimate uses ball travel divided by release time. Update ball travel, release frames, or FPS in the recorder and this tool updates with the new sample.
+              {usingTrackedBallSpeed
+                ? `Auto Track Swing estimated ${trackedBallSpeed.toFixed(1)} MPH from the tracked arm speed and body-scale read in the current clip.`
+                : 'The current speed estimate is still coming from the manual ball-flight sample. Run Auto Track Swing to switch this tool to the computer-driven read.'}
             </Text>
             <Text style={styles.infoMeta}>Current clip: {selectedVideo?.fileName || 'No clip selected'}</Text>
+            <Text style={styles.infoMeta}>Tracking status: {trackingStatus === 'running' ? 'Tracking now' : trackingStatus === 'ready' ? 'Tracked clip ready' : 'Manual mode'}</Text>
           </View>
         </>
       ) : (

@@ -1,8 +1,9 @@
-﻿import React, {useEffect, useMemo, useRef, useState} from 'react';
+import React, {useEffect, useMemo, useRef, useState} from 'react';
 import {BackHandler, StatusBar, View} from 'react-native';
 
 import {SplashOverlay} from './src/components/SplashOverlay';
 import {initialAnalysisInput, initialCoachBoard, initialProfiles} from './src/data/dashboard';
+import {analyzeMotionVideo} from './src/native/motionTracker';
 import {AboutScreen} from './src/screens/AboutScreen';
 import {BallSpeedScreen} from './src/screens/BallSpeedScreen';
 import {CoachBoardScreen} from './src/screens/CoachBoardScreen';
@@ -38,7 +39,10 @@ export default function App() {
   const [showSplash, setShowSplash] = useState(true);
   const [selectedVideo, setSelectedVideo] = useState(null);
   const [analysisInput, setAnalysisInput] = useState(initialAnalysisInput);
-  const [analysisResult, setAnalysisResult] = useState(() => runVideoAnalysis(initialAnalysisInput));
+  const [trackingResult, setTrackingResult] = useState(null);
+  const [trackingStatus, setTrackingStatus] = useState('idle');
+  const [trackingError, setTrackingError] = useState('');
+  const [analysisResult, setAnalysisResult] = useState(() => runVideoAnalysis(initialAnalysisInput, null));
   const [coachBoard, setCoachBoard] = useState(initialCoachBoard);
   const [profiles, setProfiles] = useState(initialProfiles);
   const screenStackRef = useRef(screenStack);
@@ -50,8 +54,8 @@ export default function App() {
   }, [screenStack]);
 
   useEffect(() => {
-    setAnalysisResult(runVideoAnalysis(analysisInput));
-  }, [analysisInput]);
+    setAnalysisResult(runVideoAnalysis(analysisInput, trackingResult));
+  }, [analysisInput, trackingResult]);
 
   useEffect(() => {
     const subscription = BackHandler.addEventListener('hardwareBackPress', () => {
@@ -107,11 +111,39 @@ export default function App() {
   };
 
   const handleRunAnalysis = () => {
-    setAnalysisResult(runVideoAnalysis(analysisInput));
+    setAnalysisResult(runVideoAnalysis(analysisInput, trackingResult));
+  };
+
+  const handleTrackSwing = async () => {
+    if (!selectedVideo?.uri) {
+      setTrackingStatus('error');
+      setTrackingError('Select or record a clip before running the swing tracker.');
+      return;
+    }
+
+    try {
+      setTrackingStatus('running');
+      setTrackingError('');
+      const result = await analyzeMotionVideo(selectedVideo.uri);
+      setTrackingResult(result);
+      setTrackingStatus('ready');
+      setAnalysisInput(current => ({
+        ...current,
+        hitchFrames: Number.isFinite(result?.hitchFrames) ? `${result.hitchFrames}` : current.hitchFrames,
+        contactPoint: result?.contactPoint || current.contactPoint,
+      }));
+    } catch (error) {
+      setTrackingResult(null);
+      setTrackingStatus('error');
+      setTrackingError(error?.message || 'Unable to analyze the selected clip.');
+    }
   };
 
   const handleSelectVideo = videoAsset => {
     setSelectedVideo(videoAsset);
+    setTrackingResult(null);
+    setTrackingStatus('idle');
+    setTrackingError('');
   };
 
   const handleAdjustBoard = (field, deltaOrValue, isStat = false) => {
@@ -174,7 +206,11 @@ export default function App() {
         onChangeField={handleChangeField}
         onRunAnalysis={handleRunAnalysis}
         onSelectVideo={handleSelectVideo}
+        onTrackSwing={handleTrackSwing}
         selectedVideo={selectedVideo}
+        trackingError={trackingError}
+        trackingResult={trackingResult}
+        trackingStatus={trackingStatus}
         {...sharedScreenProps}
       />
     );
@@ -185,6 +221,7 @@ export default function App() {
       <PlaybackScreen
         analysisResult={analysisResult}
         selectedVideo={selectedVideo}
+        trackingStatus={trackingStatus}
         {...sharedScreenProps}
       />
     );
@@ -196,13 +233,22 @@ export default function App() {
         analysisInput={analysisInput}
         analysisResult={analysisResult}
         selectedVideo={selectedVideo}
+        trackingResult={trackingResult}
+        trackingStatus={trackingStatus}
         {...sharedScreenProps}
       />
     );
   }
 
   if (activeScreen === 'swing-feedback') {
-    screen = <FeedbackScreen analysisResult={analysisResult} {...sharedScreenProps} />;
+    screen = (
+      <FeedbackScreen
+        analysisResult={analysisResult}
+        selectedVideo={selectedVideo}
+        trackingStatus={trackingStatus}
+        {...sharedScreenProps}
+      />
+    );
   }
 
   if (activeScreen === 'motion-stats' || activeScreen === 'jump-speed') {
@@ -211,6 +257,7 @@ export default function App() {
         analysisInput={analysisInput}
         analysisResult={analysisResult}
         selectedVideo={selectedVideo}
+        trackingStatus={trackingStatus}
         {...sharedScreenProps}
       />
     );

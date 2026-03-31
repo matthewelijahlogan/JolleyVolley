@@ -1,4 +1,4 @@
-package com.matthewelijahlogan.jolleyvolley
+﻿package com.matthewelijahlogan.jolleyvolley
 
 import android.app.Application
 import com.facebook.react.PackageList
@@ -11,6 +11,7 @@ import com.facebook.react.defaults.DefaultReactHost.getDefaultReactHost
 import com.facebook.react.defaults.DefaultReactNativeHost
 import com.facebook.react.soloader.OpenSourceMergedSoMapping
 import com.facebook.soloader.SoLoader
+import com.matthewelijahlogan.jolleyvolley.motion.MotionTrackerPackage
 
 class MainApplication : Application(), ReactApplication {
 
@@ -18,6 +19,7 @@ class MainApplication : Application(), ReactApplication {
       object : DefaultReactNativeHost(this) {
         override fun getPackages(): List<ReactPackage> =
             PackageList(this).packages.apply {
+              add(MotionTrackerPackage())
             }
 
         override fun getJSMainModuleName(): String = "index"
