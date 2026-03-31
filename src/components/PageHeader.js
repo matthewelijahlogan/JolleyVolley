@@ -1,4 +1,4 @@
-﻿import {Image, Pressable, StyleSheet, View} from 'react-native';
+import {Image, Pressable, StyleSheet, View} from 'react-native';
 
 import {colors, spacing} from '../theme/theme';
 
@@ -35,11 +35,11 @@ const styles = StyleSheet.create({
   },
   iconLine: {
     position: 'absolute',
-    top: 2,
-    bottom: 2,
-    left: '50%',
-    width: 3,
-    marginLeft: -1.5,
+    left: 2,
+    right: 2,
+    top: '50%',
+    height: 3,
+    marginTop: -1.5,
     borderRadius: 999,
     backgroundColor: colors.primaryBright,
     shadowColor: colors.primaryBright,

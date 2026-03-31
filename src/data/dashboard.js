@@ -1,15 +1,15 @@
-﻿export const mainMenuSections = [
+export const mainMenuSections = [
   {
-    id: 'motion-lab-menu',
+    id: 'motion-lab',
     label: 'Motion Lab',
     eyebrow: 'Analysis Suite',
-    preview: 'Open the recorder, swing tracker, MPH tool, stats, and feedback tools for a player rep.',
+    preview: 'Record or import one rep and get the swing, ball, jump, and correction readouts together on one screen.',
     description:
-      'Motion Lab is the training hub. It groups the recorder, swing tracker, ball-speed tool, motion stats, and swing correction feedback in one place.',
+      'Motion Lab is the all-in-one training hub. Capture one rep, run one analysis pass, and get the swing trail, ball speed, jump numbers, and correction cues together.',
     bullets: [
       'Record or import a player rep',
-      'Open a dedicated swing tracker visual',
-      'Review ball speed, stats, and correction cues',
+      'Run one full Motion Lab analysis pass',
+      'Review the swing, ball, jump, and coaching readout together',
     ],
     openLabel: 'Open Motion Lab',
   },

@@ -108,6 +108,15 @@ export default function App() {
     setAnalysisResult(runVideoAnalysis(analysisInput, trackingResult));
   };
 
+  const handleAnalyzeRep = async () => {
+    if (selectedVideo?.uri) {
+      await handleTrackSwing();
+      return;
+    }
+
+    handleRunAnalysis();
+  };
+
   const handleTrackSwing = async () => {
     if (!selectedVideo?.uri) {
       setTrackingStatus('error');
@@ -201,7 +210,7 @@ export default function App() {
         analysisInput={analysisInput}
         analysisResult={analysisResult}
         onChangeField={handleChangeField}
-        onRunAnalysis={handleRunAnalysis}
+        onAnalyzeRep={handleAnalyzeRep}
         onSelectVideo={handleSelectVideo}
         onTrackSwing={handleTrackSwing}
         selectedVideo={selectedVideo}
