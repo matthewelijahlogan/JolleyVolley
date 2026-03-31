@@ -17,13 +17,13 @@ export const mainMenuSections = [
     id: 'scoreboard',
     label: 'Scoreboard',
     eyebrow: 'Match Control',
-    preview: 'Track the score, possession, sets, and common volleyball stats from the sideline.',
+    preview: 'Run a big live score up top, swipe through jersey-based stat panels below, and finish into a full player-stat review.',
     description:
-      'The scoreboard page keeps match flow simple for a coach, with fast score controls, possession toggles, and live stat counters for the most-used volleyball actions.',
+      'The scoreboard is built for live match control first. Keep the score huge, flip serve quickly, swipe through stat categories, and log kills, digs, and more directly to a jersey number.',
     bullets: [
-      'Keep score and set totals live',
-      'Flip possession in one tap',
-      'Track kills, aces, blocks, digs, and assists',
+      'Keep score and set totals live on a dedicated board',
+      'Swipe stat-entry panels by category',
+      'Finish the match into an individual player-stat review',
     ],
     openLabel: 'Open Scoreboard',
   },
@@ -130,6 +130,62 @@ export const motionLabSections = [
   },
 ];
 
+export const scoreboardStatCategories = [
+  {
+    id: 'kills',
+    label: 'Kills',
+    shortLabel: 'K',
+    hint: 'Tap the jersey that finished the point.',
+  },
+  {
+    id: 'digs',
+    label: 'Digs',
+    shortLabel: 'D',
+    hint: 'Track the defender who kept the ball alive.',
+  },
+  {
+    id: 'assists',
+    label: 'Assists',
+    shortLabel: 'A',
+    hint: 'Add the setter or helper that created the swing.',
+  },
+  {
+    id: 'blocks',
+    label: 'Blocks',
+    shortLabel: 'B',
+    hint: 'Mark the blocker that closed the attack.',
+  },
+  {
+    id: 'aces',
+    label: 'Aces',
+    shortLabel: 'ACE',
+    hint: 'Keep service pressure tied to a jersey number.',
+  },
+  {
+    id: 'errors',
+    label: 'Errors',
+    shortLabel: 'E',
+    hint: 'Log service, hitting, or handling errors by player.',
+  },
+];
+
+export function createEmptyScoreboardStats() {
+  return scoreboardStatCategories.reduce((stats, category) => {
+    stats[category.id] = 0;
+    return stats;
+  }, {});
+}
+
+function createScoreboardPlayer(id, jersey, name, role) {
+  return {
+    id,
+    jersey,
+    name,
+    role,
+    stats: createEmptyScoreboardStats(),
+  };
+}
+
 export const initialAnalysisInput = {
   standingReachInches: '',
   contactReachInches: '',
@@ -144,18 +200,29 @@ export const initialAnalysisInput = {
 export const initialCoachBoard = {
   homeTeam: 'Jolley Squad',
   awayTeam: 'Varsity Edge',
-  homeScore: 23,
-  awayScore: 19,
-  homeSets: 2,
-  awaySets: 1,
+  homeScore: 0,
+  awayScore: 0,
+  homeSets: 0,
+  awaySets: 0,
   possession: 'home',
-  stats: {
-    kills: 18,
-    aces: 5,
-    blocks: 7,
-    digs: 14,
-    assists: 21,
-  },
+  matchStatus: 'live',
+  finishedAt: '',
+  homeRoster: [
+    createScoreboardPlayer('ava-rivera', '12', 'Ava Rivera', 'OH'),
+    createScoreboardPlayer('mila-chen', '9', 'Mila Chen', 'RS'),
+    createScoreboardPlayer('zoe-banks', '5', 'Zoe Banks', 'MB'),
+    createScoreboardPlayer('tori-james', '3', 'Tori James', 'S'),
+    createScoreboardPlayer('kira-hall', '14', 'Kira Hall', 'DS'),
+    createScoreboardPlayer('lena-ortiz', '18', 'Lena Ortiz', 'OH'),
+  ],
+  awayRoster: [
+    createScoreboardPlayer('maya-ford', '2', 'Maya Ford', 'OH'),
+    createScoreboardPlayer('nova-byrd', '6', 'Nova Byrd', 'MB'),
+    createScoreboardPlayer('ella-hughes', '8', 'Ella Hughes', 'S'),
+    createScoreboardPlayer('sloane-carter', '11', 'Sloane Carter', 'RS'),
+    createScoreboardPlayer('riley-price', '15', 'Riley Price', 'DS'),
+    createScoreboardPlayer('jade-kim', '21', 'Jade Kim', 'OH'),
+  ],
 };
 
 export const initialProfiles = [
@@ -210,4 +277,3 @@ export const initialProfiles = [
     sessions: [],
   },
 ];
-

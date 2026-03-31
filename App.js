@@ -2,7 +2,12 @@ import React, {useEffect, useMemo, useRef, useState} from 'react';
 import {Alert, BackHandler, StatusBar, View} from 'react-native';
 
 import {SplashOverlay} from './src/components/SplashOverlay';
-import {initialAnalysisInput, initialCoachBoard, initialProfiles} from './src/data/dashboard';
+import {
+  createEmptyScoreboardStats,
+  initialAnalysisInput,
+  initialCoachBoard,
+  initialProfiles,
+} from './src/data/dashboard';
 import {createMotionHistoryEntry, createMotionHistoryFromProfiles} from './src/data/motionHistory';
 import {analyzeMotionVideo} from './src/native/motionTracker';
 import {AboutScreen} from './src/screens/AboutScreen';
@@ -68,6 +73,22 @@ function buildSessionSnapshot(analysisResult, selectedVideo) {
     summary: analysisResult.summary,
     clipName: selectedVideo?.fileName || 'Current session',
   };
+}
+
+function createFreshRoster(roster = []) {
+  return roster.map(player => ({
+    ...player,
+    stats: createEmptyScoreboardStats(),
+  }));
+}
+
+function formatFinishedMatchTime() {
+  return new Date().toLocaleString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+  });
 }
 
 export default function App() {
@@ -201,31 +222,109 @@ export default function App() {
     navigateToScreen('motion-stats');
   };
 
-  const handleAdjustBoard = (field, deltaOrValue, isStat = false) => {
+  const handleAdjustScore = (teamSide, delta) => {
     setCoachBoard(current => {
-      if (isStat) {
-        const nextValue = Math.max(0, (current.stats[field] || 0) + deltaOrValue);
-        return {
-          ...current,
-          stats: {
-            ...current.stats,
-            [field]: nextValue,
-          },
-        };
+      if (current.matchStatus === 'final') {
+        return current;
       }
 
-      if (field === 'possession') {
-        return {
-          ...current,
-          possession: deltaOrValue,
-        };
+      const scoreField = teamSide === 'home' ? 'homeScore' : 'awayScore';
+      const nextScore = Math.max(0, (current[scoreField] || 0) + delta);
+
+      return {
+        ...current,
+        [scoreField]: nextScore,
+        possession: delta > 0 ? teamSide : current.possession,
+      };
+    });
+  };
+
+  const handleAdjustSets = (teamSide, delta) => {
+    setCoachBoard(current => {
+      if (current.matchStatus === 'final') {
+        return current;
+      }
+
+      const setField = teamSide === 'home' ? 'homeSets' : 'awaySets';
+      return {
+        ...current,
+        [setField]: Math.max(0, (current[setField] || 0) + delta),
+      };
+    });
+  };
+
+  const handleSetPossession = teamSide => {
+    setCoachBoard(current => {
+      if (current.matchStatus === 'final') {
+        return current;
       }
 
       return {
         ...current,
-        [field]: Math.max(0, (current[field] || 0) + deltaOrValue),
+        possession: teamSide,
       };
     });
+  };
+
+  const handleAdjustPlayerStat = (teamSide, playerId, statId, delta) => {
+    setCoachBoard(current => {
+      if (current.matchStatus === 'final') {
+        return current;
+      }
+
+      const rosterField = teamSide === 'home' ? 'homeRoster' : 'awayRoster';
+      return {
+        ...current,
+        [rosterField]: (current[rosterField] || []).map(player =>
+          player.id === playerId
+            ? {
+                ...player,
+                stats: {
+                  ...player.stats,
+                  [statId]: Math.max(0, Number(player.stats?.[statId] || 0) + delta),
+                },
+              }
+            : player,
+        ),
+      };
+    });
+  };
+
+  const handleFinishMatch = () => {
+    setCoachBoard(current => {
+      if (current.matchStatus === 'final') {
+        return current;
+      }
+
+      return {
+        ...current,
+        matchStatus: 'final',
+        finishedAt: formatFinishedMatchTime(),
+      };
+    });
+  };
+
+  const handleResumeMatch = () => {
+    setCoachBoard(current => ({
+      ...current,
+      matchStatus: 'live',
+      finishedAt: '',
+    }));
+  };
+
+  const handleStartNewMatch = () => {
+    setCoachBoard(current => ({
+      ...current,
+      homeScore: 0,
+      awayScore: 0,
+      homeSets: 0,
+      awaySets: 0,
+      possession: 'home',
+      matchStatus: 'live',
+      finishedAt: '',
+      homeRoster: createFreshRoster(current.homeRoster),
+      awayRoster: createFreshRoster(current.awayRoster),
+    }));
   };
 
   const handleSaveSessionToProfile = profileId => {
@@ -320,7 +419,13 @@ export default function App() {
     screen = (
       <CoachBoardScreen
         coachBoard={coachBoard}
-        onAdjustBoard={handleAdjustBoard}
+        onAdjustPlayerStat={handleAdjustPlayerStat}
+        onAdjustScore={handleAdjustScore}
+        onAdjustSets={handleAdjustSets}
+        onFinishMatch={handleFinishMatch}
+        onResumeMatch={handleResumeMatch}
+        onSetPossession={handleSetPossession}
+        onStartNewMatch={handleStartNewMatch}
         {...sharedScreenProps}
       />
     );
@@ -350,4 +455,3 @@ export default function App() {
     </View>
   );
 }
-
