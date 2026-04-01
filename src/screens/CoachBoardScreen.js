@@ -346,7 +346,7 @@ const styles = StyleSheet.create({
   },
   content: {
     padding: spacing.lg,
-    paddingTop: spacing.xl,
+    paddingTop: spacing.sm,
     paddingBottom: spacing.xxl,
   },
   pressed: {
@@ -908,3 +908,4 @@ const styles = StyleSheet.create({
     lineHeight: 19,
   },
 });
+

@@ -138,7 +138,7 @@ const styles = StyleSheet.create({
   },
   content: {
     padding: spacing.lg,
-    paddingTop: spacing.xl,
+    paddingTop: spacing.sm,
     paddingBottom: spacing.xxl,
   },
   card: {
@@ -304,3 +304,4 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   },
 });
+

@@ -407,7 +407,7 @@ const styles = StyleSheet.create({
   },
   content: {
     paddingHorizontal: spacing.md,
-    paddingTop: spacing.xl,
+    paddingTop: spacing.sm,
     paddingBottom: spacing.xxl,
   },
   stageCard: {
@@ -758,3 +758,4 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
 });
+

@@ -1,6 +1,6 @@
 import {Image, Pressable, StyleSheet, View} from 'react-native';
 
-import {colors, spacing} from '../theme/theme';
+import {spacing} from '../theme/theme';
 
 const iconSource = require('../../assets/images/icon.png');
 
@@ -9,8 +9,7 @@ export function PageHeader({onHomePress}) {
 
   return (
     <View style={styles.header}>
-      <Pressable disabled={!canGoHome} onPress={onHomePress} style={styles.homeButton}>
-        <View pointerEvents="none" style={styles.iconLine} />
+      <Pressable disabled={!canGoHome} hitSlop={10} onPress={onHomePress} style={styles.homeButton}>
         <Image source={iconSource} resizeMode="contain" style={styles.icon} />
       </Pressable>
     </View>
@@ -20,35 +19,16 @@ export function PageHeader({onHomePress}) {
 const styles = StyleSheet.create({
   header: {
     alignItems: 'center',
-    marginBottom: spacing.lg,
+    marginBottom: spacing.xs,
   },
   homeButton: {
-    width: 92,
-    height: 92,
+    width: 120,
+    height: 88,
     alignItems: 'center',
     justifyContent: 'center',
   },
   icon: {
-    width: 64,
-    height: 64,
-    zIndex: 1,
-  },
-  iconLine: {
-    position: 'absolute',
-    left: 2,
-    right: 2,
-    top: '50%',
-    height: 3,
-    marginTop: -1.5,
-    borderRadius: 999,
-    backgroundColor: colors.primaryBright,
-    shadowColor: colors.primaryBright,
-    shadowOpacity: 0.95,
-    shadowRadius: 12,
-    shadowOffset: {
-      width: 0,
-      height: 0,
-    },
-    zIndex: 0,
+    width: 102,
+    height: 102,
   },
 });

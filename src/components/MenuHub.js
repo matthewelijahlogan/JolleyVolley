@@ -93,7 +93,7 @@ const styles = StyleSheet.create({
   },
   content: {
     paddingHorizontal: spacing.lg,
-    paddingTop: spacing.xl,
+    paddingTop: spacing.sm,
     paddingBottom: spacing.xxl,
   },
   introCard: {
@@ -191,3 +191,4 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   },
 });
+

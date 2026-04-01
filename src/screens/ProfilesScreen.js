@@ -410,7 +410,7 @@ const styles = StyleSheet.create({
   },
   content: {
     padding: spacing.lg,
-    paddingTop: spacing.xl,
+    paddingTop: spacing.sm,
     paddingBottom: spacing.xxl,
   },
   heroCard: {
@@ -758,3 +758,4 @@ const styles = StyleSheet.create({
     color: colors.accent,
   },
 });
+
