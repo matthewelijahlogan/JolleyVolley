@@ -1,4 +1,4 @@
-import React, {useEffect, useMemo, useRef, useState} from 'react';
+import React, {useEffect, useMemo, useState} from 'react';
 import {Alert, BackHandler, StatusBar, View} from 'react-native';
 
 import {SplashOverlay} from './src/components/SplashOverlay';
@@ -256,7 +256,6 @@ export default function App() {
   const [selectedHistoryMetricId, setSelectedHistoryMetricId] = useState('verticalLeapInches');
   const [appLogs, setAppLogs] = useState(() => createInitialLogs());
   const [storageReady, setStorageReady] = useState(false);
-  const screenStackRef = useRef(screenStack);
 
   const activeScreen = screenStack[screenStack.length - 1] || HOME_SCREEN;
 
@@ -264,9 +263,6 @@ export default function App() {
     setAppLogs(current => [createLogEntry(category, message, detail), ...current].slice(0, MAX_LOGS));
   };
 
-  useEffect(() => {
-    screenStackRef.current = screenStack;
-  }, [screenStack]);
 
   useEffect(() => {
     setAnalysisResult(runVideoAnalysis(analysisInput, trackingResult));
@@ -366,18 +362,18 @@ export default function App() {
         return true;
       }
 
-      if (screenStackRef.current.length > 1) {
+      if (screenStack.length > 1) {
         setScreenStack(current => current.slice(0, -1));
         return true;
       }
 
-      return false;
+      return true;
     });
 
     return () => {
       subscription.remove();
     };
-  }, [showSplash]);
+  }, [screenStack, showSplash]);
 
   const navigateToScreen = screen => {
     setScreenStack(current => {
@@ -587,19 +583,35 @@ export default function App() {
   };
 
   const handleStartNewMatch = () => {
-    setCoachBoard(current => ({
-      ...syncCoachBoardWithTeams(current, teams),
-      homeScore: 0,
-      awayScore: 0,
-      homeSets: 0,
-      awaySets: 0,
-      possession: 'home',
-      matchStatus: 'live',
-      finishedAt: '',
-      homeRoster: createMatchRosterFromTeam((teams.find(team => team.id === current.homeTeamId) || teams[0] || {players: []}).players),
-      awayRoster: createMatchRosterFromTeam((teams.find(team => team.id === current.awayTeamId) || teams[1] || teams[0] || {players: []}).players),
-    }));
-    appendLog('scoreboard', 'Started a new match and reset live stats.');
+    const isFinalMatch = coachBoard.matchStatus === 'final';
+    const title = isFinalMatch ? 'Start New Match' : 'Reset Match';
+    const message = isFinalMatch
+      ? 'Start a brand new match and clear the current scoreboard and player stats?'
+      : 'Resetting will clear the current score, sets, and jersey stats for this match. Do you want to continue?';
+    const actionLabel = isFinalMatch ? 'Start New Match' : 'Reset Match';
+
+    Alert.alert(title, message, [
+      {text: 'Cancel', style: 'cancel'},
+      {
+        text: actionLabel,
+        style: 'destructive',
+        onPress: () => {
+          setCoachBoard(current => ({
+            ...syncCoachBoardWithTeams(current, teams),
+            homeScore: 0,
+            awayScore: 0,
+            homeSets: 0,
+            awaySets: 0,
+            possession: 'home',
+            matchStatus: 'live',
+            finishedAt: '',
+            homeRoster: createMatchRosterFromTeam((teams.find(team => team.id === current.homeTeamId) || teams[0] || {players: []}).players),
+            awayRoster: createMatchRosterFromTeam((teams.find(team => team.id === current.awayTeamId) || teams[1] || teams[0] || {players: []}).players),
+          }));
+          appendLog('scoreboard', 'Started a new match and reset live stats.');
+        },
+      },
+    ]);
   };
 
   const handleSaveSessionToProfile = profileId => {
