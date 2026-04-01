@@ -1,4 +1,4 @@
-﻿package com.matthewelijahlogan.jolleyvolley
+package com.matthewelijahlogan.jolleyvolley
 
 import android.app.Application
 import com.facebook.react.PackageList
@@ -12,6 +12,7 @@ import com.facebook.react.defaults.DefaultReactNativeHost
 import com.facebook.react.soloader.OpenSourceMergedSoMapping
 import com.facebook.soloader.SoLoader
 import com.matthewelijahlogan.jolleyvolley.motion.MotionTrackerPackage
+import com.matthewelijahlogan.jolleyvolley.storage.AppStateStorePackage
 
 class MainApplication : Application(), ReactApplication {
 
@@ -20,6 +21,7 @@ class MainApplication : Application(), ReactApplication {
         override fun getPackages(): List<ReactPackage> =
             PackageList(this).packages.apply {
               add(MotionTrackerPackage())
+              add(AppStateStorePackage())
             }
 
         override fun getJSMainModuleName(): String = "index"
@@ -41,3 +43,4 @@ class MainApplication : Application(), ReactApplication {
     }
   }
 }
+

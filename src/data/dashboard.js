@@ -176,15 +176,57 @@ export function createEmptyScoreboardStats() {
   }, {});
 }
 
-function createScoreboardPlayer(id, jersey, name, role) {
+export function createTeamPlayer(id, jersey, name, role) {
   return {
     id,
     jersey,
     name,
     role,
-    stats: createEmptyScoreboardStats(),
   };
 }
+
+export function createMatchRosterFromTeam(players = []) {
+  return players.map(player => ({
+    ...player,
+    stats: createEmptyScoreboardStats(),
+  }));
+}
+
+export const defaultScoreboardVisibility = {
+  showScoreboard: true,
+  showStats: true,
+  showAwayScoreboard: true,
+  showAwayStats: true,
+};
+
+export const initialTeams = [
+  {
+    id: 'jolley-squad',
+    name: 'Jolley Squad',
+    abbreviation: 'JVSQ',
+    players: [
+      createTeamPlayer('ava-rivera', '12', 'Ava Rivera', 'OH'),
+      createTeamPlayer('mila-chen', '9', 'Mila Chen', 'RS'),
+      createTeamPlayer('zoe-banks', '5', 'Zoe Banks', 'MB'),
+      createTeamPlayer('tori-james', '3', 'Tori James', 'S'),
+      createTeamPlayer('kira-hall', '14', 'Kira Hall', 'DS'),
+      createTeamPlayer('lena-ortiz', '18', 'Lena Ortiz', 'OH'),
+    ],
+  },
+  {
+    id: 'varsity-edge',
+    name: 'Varsity Edge',
+    abbreviation: 'EDGE',
+    players: [
+      createTeamPlayer('maya-ford', '2', 'Maya Ford', 'OH'),
+      createTeamPlayer('nova-byrd', '6', 'Nova Byrd', 'MB'),
+      createTeamPlayer('ella-hughes', '8', 'Ella Hughes', 'S'),
+      createTeamPlayer('sloane-carter', '11', 'Sloane Carter', 'RS'),
+      createTeamPlayer('riley-price', '15', 'Riley Price', 'DS'),
+      createTeamPlayer('jade-kim', '21', 'Jade Kim', 'OH'),
+    ],
+  },
+];
 
 export const initialAnalysisInput = {
   standingReachInches: '',
@@ -198,8 +240,10 @@ export const initialAnalysisInput = {
 };
 
 export const initialCoachBoard = {
-  homeTeam: 'Jolley Squad',
-  awayTeam: 'Varsity Edge',
+  homeTeamId: initialTeams[0].id,
+  awayTeamId: initialTeams[1].id,
+  homeTeam: initialTeams[0].name,
+  awayTeam: initialTeams[1].name,
   homeScore: 0,
   awayScore: 0,
   homeSets: 0,
@@ -207,22 +251,9 @@ export const initialCoachBoard = {
   possession: 'home',
   matchStatus: 'live',
   finishedAt: '',
-  homeRoster: [
-    createScoreboardPlayer('ava-rivera', '12', 'Ava Rivera', 'OH'),
-    createScoreboardPlayer('mila-chen', '9', 'Mila Chen', 'RS'),
-    createScoreboardPlayer('zoe-banks', '5', 'Zoe Banks', 'MB'),
-    createScoreboardPlayer('tori-james', '3', 'Tori James', 'S'),
-    createScoreboardPlayer('kira-hall', '14', 'Kira Hall', 'DS'),
-    createScoreboardPlayer('lena-ortiz', '18', 'Lena Ortiz', 'OH'),
-  ],
-  awayRoster: [
-    createScoreboardPlayer('maya-ford', '2', 'Maya Ford', 'OH'),
-    createScoreboardPlayer('nova-byrd', '6', 'Nova Byrd', 'MB'),
-    createScoreboardPlayer('ella-hughes', '8', 'Ella Hughes', 'S'),
-    createScoreboardPlayer('sloane-carter', '11', 'Sloane Carter', 'RS'),
-    createScoreboardPlayer('riley-price', '15', 'Riley Price', 'DS'),
-    createScoreboardPlayer('jade-kim', '21', 'Jade Kim', 'OH'),
-  ],
+  visibility: defaultScoreboardVisibility,
+  homeRoster: createMatchRosterFromTeam(initialTeams[0].players),
+  awayRoster: createMatchRosterFromTeam(initialTeams[1].players),
 };
 
 export const initialProfiles = [

@@ -3,7 +3,7 @@ import {Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View} from
 
 import {NeonButton} from '../components/NeonButton';
 import {PageHeader} from '../components/PageHeader';
-import {scoreboardStatCategories} from '../data/dashboard';
+import {defaultScoreboardVisibility, scoreboardStatCategories} from '../data/dashboard';
 import {colors, radii, spacing} from '../theme/theme';
 
 function sumRosterStat(roster = [], statId) {
@@ -11,19 +11,23 @@ function sumRosterStat(roster = [], statId) {
 }
 
 function MiniActionButton({label, onPress, tone = 'primary'}) {
-  const primary = tone === 'primary';
+  const active = tone === 'primary';
 
   return (
     <Pressable
       onPress={onPress}
-      style={({pressed}) => [
-        styles.miniButton,
-        primary ? styles.miniButtonPrimary : styles.miniButtonSecondary,
-        pressed && styles.miniButtonPressed,
-      ]}>
-      <Text style={[styles.miniButtonLabel, primary ? styles.miniButtonLabelPrimary : styles.miniButtonLabelSecondary]}>
-        {label}
-      </Text>
+      style={({pressed}) => [styles.miniButton, active ? styles.miniButtonPrimary : styles.miniButtonSecondary, pressed && styles.pressed]}>
+      <Text style={[styles.miniButtonLabel, active ? styles.miniButtonLabelPrimary : styles.miniButtonLabelSecondary]}>{label}</Text>
+    </Pressable>
+  );
+}
+
+function ToggleChip({active, label, onPress}) {
+  return (
+    <Pressable
+      onPress={onPress}
+      style={({pressed}) => [styles.toggleChip, active ? styles.toggleChipActive : styles.toggleChipInactive, pressed && styles.pressed]}>
+      <Text style={[styles.toggleChipLabel, active ? styles.toggleChipLabelActive : styles.toggleChipLabelInactive]}>{label}</Text>
     </Pressable>
   );
 }
@@ -32,114 +36,121 @@ function CategoryChip({active, label, onPress}) {
   return (
     <Pressable
       onPress={onPress}
-      style={({pressed}) => [styles.categoryChip, active && styles.categoryChipActive, pressed && styles.categoryChipPressed]}>
-      <Text style={[styles.categoryChipText, active && styles.categoryChipTextActive]}>{label}</Text>
+      style={({pressed}) => [styles.categoryChip, active && styles.categoryChipActive, pressed && styles.pressed]}>
+      <Text style={[styles.categoryChipLabel, active && styles.categoryChipLabelActive]}>{label}</Text>
     </Pressable>
   );
 }
 
-function PlayerStatTile({isVeryCompact, player, statCategory, teamSide, onAdjustPlayerStat}) {
-  const value = Number(player.stats?.[statCategory.id] || 0);
+function BigScorePanel({isFinal, isNarrow, onAdjustScore, onAdjustSets, possession, score, sets, side, title}) {
+  const serving = possession === side;
 
   return (
-    <View style={[styles.playerTile, isVeryCompact && styles.playerTileCompact]}>
-      <View style={styles.playerTileTop}>
-        <Text style={styles.playerJersey}>#{player.jersey}</Text>
-        <Text numberOfLines={1} style={styles.playerName}>{player.name}</Text>
-        <Text style={styles.playerRole}>{player.role}</Text>
+    <View style={styles.scorePanel}>
+      <Text numberOfLines={1} style={[styles.scoreTitle, isNarrow && styles.scoreTitleNarrow]}>{title}</Text>
+      <View style={[styles.servePill, serving && styles.servePillActive]}>
+        <Text style={[styles.servePillLabel, serving && styles.servePillLabelActive]}>{serving ? 'Serving' : 'Receive'}</Text>
       </View>
-      <Text style={styles.playerStatValue}>{value}</Text>
-      <View style={styles.playerActionRow}>
-        <MiniActionButton
-          label="-1"
-          onPress={() => onAdjustPlayerStat(teamSide, player.id, statCategory.id, -1)}
-          tone="secondary"
-        />
-        <MiniActionButton label="+1" onPress={() => onAdjustPlayerStat(teamSide, player.id, statCategory.id, 1)} />
+      <View style={styles.scoreValueWrap}>
+        <Text adjustsFontSizeToFit numberOfLines={1} style={[styles.scoreValue, isNarrow && styles.scoreValueNarrow]}>{score}</Text>
       </View>
+      {isFinal ? (
+        <Text style={styles.setReadout}>Sets {sets}</Text>
+      ) : (
+        <>
+          <View style={styles.rowGapSmall}>
+            <View style={styles.actionRow}>
+              <MiniActionButton label="-1" onPress={() => onAdjustScore(side, -1)} tone="secondary" />
+              <MiniActionButton label="+1" onPress={() => onAdjustScore(side, 1)} />
+            </View>
+            <View style={styles.actionRow}>
+              <MiniActionButton label="-S" onPress={() => onAdjustSets(side, -1)} tone="secondary" />
+              <MiniActionButton label={`Sets ${sets}`} onPress={() => {}} tone="secondary" />
+              <MiniActionButton label="+S" onPress={() => onAdjustSets(side, 1)} />
+            </View>
+          </View>
+        </>
+      )}
     </View>
   );
 }
 
-function QuickTeamPanel({isCompact, isVeryCompact, players, statCategory, teamLabel, teamSide, onAdjustPlayerStat}) {
-  const total = useMemo(() => sumRosterStat(players, statCategory.id), [players, statCategory.id]);
-
+function TeamStatPanel({players, side, statCategory, title, onAdjustPlayerStat}) {
   return (
-    <View style={[styles.quickTeamPanel, isCompact && styles.quickTeamPanelCompact]}>
-      <View style={[styles.quickTeamHeader, isCompact && styles.quickTeamHeaderCompact]}>
-        <View style={styles.quickTeamTitleWrap}>
-          <Text style={styles.quickTeamEyebrow}>{teamSide === 'home' ? 'Home' : 'Away'}</Text>
-          <Text numberOfLines={2} style={styles.quickTeamTitle}>{teamLabel}</Text>
-        </View>
-        <View style={[styles.quickTeamTotalPill, isCompact && styles.quickTeamTotalPillCompact]}>
-          <Text style={styles.quickTeamTotalValue}>{total}</Text>
-          <Text style={styles.quickTeamTotalLabel}>{statCategory.label}</Text>
-        </View>
-      </View>
-
-      <View style={styles.playerGrid}>
-        {players.map(player => (
-          <PlayerStatTile
-            isVeryCompact={isVeryCompact}
-            key={player.id}
-            onAdjustPlayerStat={onAdjustPlayerStat}
-            player={player}
-            statCategory={statCategory}
-            teamSide={teamSide}
-          />
-        ))}
-      </View>
-    </View>
-  );
-}
-
-function ReviewTeamCard({roster, teamName}) {
-  const totals = scoreboardStatCategories.map(category => ({
-    ...category,
-    value: sumRosterStat(roster, category.id),
-  }));
-
-  return (
-    <View style={styles.reviewCard}>
-      <View style={styles.reviewHeader}>
+    <View style={styles.statTeamCard}>
+      <View style={styles.statTeamHeader}>
         <View>
-          <Text style={styles.reviewEyebrow}>Team Review</Text>
-          <Text style={styles.reviewTitle}>{teamName}</Text>
+          <Text style={styles.cardEyebrow}>{side === 'home' ? 'Home' : 'Away'}</Text>
+          <Text style={styles.statTeamTitle}>{title}</Text>
+        </View>
+        <View style={styles.totalPill}>
+          <Text style={styles.totalPillValue}>{sumRosterStat(players, statCategory.id)}</Text>
+          <Text style={styles.totalPillLabel}>{statCategory.shortLabel}</Text>
         </View>
       </View>
-
-      <View style={styles.reviewTotalsRow}>
-        {totals.map(category => (
-          <View key={category.id} style={styles.reviewTotalPill}>
-            <Text style={styles.reviewTotalValue}>{category.value}</Text>
-            <Text style={styles.reviewTotalLabel}>{category.label}</Text>
-          </View>
-        ))}
-      </View>
-
-      <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-        <View style={styles.reviewTable}>
-          <View style={[styles.reviewRow, styles.reviewHeaderRow]}>
-            <Text style={[styles.reviewCell, styles.reviewCellJersey]}>#</Text>
-            <Text style={[styles.reviewCell, styles.reviewCellName]}>Player</Text>
-            {scoreboardStatCategories.map(category => (
-              <Text key={category.id} style={[styles.reviewCell, styles.reviewCellStat]}>{category.shortLabel}</Text>
-            ))}
-          </View>
-
-          {roster.map(player => (
-            <View key={player.id} style={styles.reviewRow}>
-              <Text style={[styles.reviewCell, styles.reviewCellJersey]}>#{player.jersey}</Text>
-              <Text numberOfLines={1} style={[styles.reviewCell, styles.reviewCellName]}>{player.name}</Text>
-              {scoreboardStatCategories.map(category => (
-                <Text key={`${player.id}-${category.id}`} style={[styles.reviewCell, styles.reviewCellStat]}>
-                  {Number(player.stats?.[category.id] || 0)}
-                </Text>
-              ))}
+      {players.length ? (
+        <View style={styles.playerGrid}>
+          {players.map(player => (
+            <View key={player.id} style={styles.playerCard}>
+              <Text style={styles.playerJersey}>#{player.jersey}</Text>
+              <Text numberOfLines={1} style={styles.playerName}>{player.name}</Text>
+              <Text style={styles.playerRole}>{player.role}</Text>
+              <Text style={styles.playerValue}>{Number(player.stats?.[statCategory.id] || 0)}</Text>
+              <View style={styles.actionRow}>
+                <MiniActionButton label="-1" onPress={() => onAdjustPlayerStat(side, player.id, statCategory.id, -1)} tone="secondary" />
+                <MiniActionButton label="+1" onPress={() => onAdjustPlayerStat(side, player.id, statCategory.id, 1)} />
+              </View>
             </View>
           ))}
         </View>
-      </ScrollView>
+      ) : (
+        <View style={styles.placeholderCard}>
+          <Text style={styles.placeholderCopy}>No players are assigned to this team yet.</Text>
+        </View>
+      )}
+    </View>
+  );
+}
+
+function ReviewTable({roster, title}) {
+  return (
+    <View style={styles.reviewCard}>
+      <Text style={styles.cardEyebrow}>Final Review</Text>
+      <Text style={styles.reviewTitle}>{title}</Text>
+      <View style={styles.reviewTotalsRow}>
+        {scoreboardStatCategories.map(category => (
+          <View key={category.id} style={styles.reviewTotalPill}>
+            <Text style={styles.reviewTotalValue}>{sumRosterStat(roster, category.id)}</Text>
+            <Text style={styles.reviewTotalLabel}>{category.shortLabel}</Text>
+          </View>
+        ))}
+      </View>
+      {roster.length ? (
+        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+          <View style={styles.reviewTable}>
+            <View style={[styles.reviewRow, styles.reviewHeaderRow]}>
+              <Text style={[styles.reviewCell, styles.reviewJerseyCell]}>#</Text>
+              <Text style={[styles.reviewCell, styles.reviewNameCell]}>Player</Text>
+              {scoreboardStatCategories.map(category => (
+                <Text key={category.id} style={[styles.reviewCell, styles.reviewStatCell]}>{category.shortLabel}</Text>
+              ))}
+            </View>
+            {roster.map(player => (
+              <View key={player.id} style={styles.reviewRow}>
+                <Text style={[styles.reviewCell, styles.reviewJerseyCell]}>#{player.jersey}</Text>
+                <Text numberOfLines={1} style={[styles.reviewCell, styles.reviewNameCell]}>{player.name}</Text>
+                {scoreboardStatCategories.map(category => (
+                  <Text key={`${player.id}-${category.id}`} style={[styles.reviewCell, styles.reviewStatCell]}>{Number(player.stats?.[category.id] || 0)}</Text>
+                ))}
+              </View>
+            ))}
+          </View>
+        </ScrollView>
+      ) : (
+        <View style={styles.placeholderCard}>
+          <Text style={styles.placeholderCopy}>No final player stats are saved for this side yet.</Text>
+        </View>
+      )}
     </View>
   );
 }
@@ -154,246 +165,176 @@ export function CoachBoardScreen({
   onResumeMatch,
   onSetPossession,
   onStartNewMatch,
+  onToggleVisibility,
 }) {
   const {width} = useWindowDimensions();
   const pagerRef = useRef(null);
   const [activeStatIndex, setActiveStatIndex] = useState(0);
   const isFinal = coachBoard.matchStatus === 'final';
-  const isCompact = width < 430;
-  const isVeryCompact = width < 380;
-  const screenPadding = isCompact ? spacing.md : spacing.lg;
-  const cardPadding = isCompact ? spacing.md : spacing.lg;
-  const panelPageWidth = Math.max(248, width - (screenPadding * 2) - (cardPadding * 2));
+  const isNarrow = width < 390;
+  const cardWidth = Math.max(260, width - (isNarrow ? spacing.md * 2 : spacing.lg * 2) - (isNarrow ? spacing.md * 2 : spacing.lg * 2));
+  const visibility = {...defaultScoreboardVisibility, ...(coachBoard.visibility || {})};
   const activeStatCategory = scoreboardStatCategories[activeStatIndex] || scoreboardStatCategories[0];
-  const homeDisplayLabel = 'HOME';
-  const awayDisplayLabel = 'AWAY';
-  const servingTeamName = coachBoard.possession === 'home' ? homeDisplayLabel : awayDisplayLabel;
-  const centerMetaCopy = isCompact ? servingTeamName : 'Serve with ' + servingTeamName;
-  const homeServeState = isVeryCompact ? (coachBoard.possession === 'home' ? 'SRV' : 'RCV') : coachBoard.possession === 'home' ? 'Serving' : 'Receive';
-  const awayServeState = isVeryCompact ? (coachBoard.possession === 'away' ? 'SRV' : 'RCV') : coachBoard.possession === 'away' ? 'Serving' : 'Receive';
+  const showScoreboard = visibility.showScoreboard;
+  const showStats = visibility.showStats;
+  const showAwayScoreboard = showScoreboard && visibility.showAwayScoreboard;
+  const showAwayStats = showStats && visibility.showAwayStats;
 
   const jumpToStatPage = index => {
     setActiveStatIndex(index);
-    pagerRef.current?.scrollTo({
-      x: index * panelPageWidth,
-      animated: true,
-    });
+    pagerRef.current?.scrollTo({x: index * cardWidth, animated: true});
   };
 
   const handlePageEnd = event => {
-    const offsetX = event.nativeEvent.contentOffset.x;
     const nextIndex = Math.min(
       scoreboardStatCategories.length - 1,
-      Math.max(0, Math.round(offsetX / panelPageWidth)),
+      Math.max(0, Math.round(event.nativeEvent.contentOffset.x / cardWidth)),
     );
     setActiveStatIndex(nextIndex);
   };
 
   return (
-    <ScrollView contentContainerStyle={[styles.content, isCompact && styles.contentCompact]} showsVerticalScrollIndicator={false} style={styles.safeArea}>
+    <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false} style={styles.safeArea}>
       <PageHeader onHomePress={onGoHome} />
 
-      <View style={[styles.scoreCard, isCompact && styles.scoreCardCompact]}>
-        <View style={[styles.matchHeaderRow, isCompact && styles.matchHeaderRowCompact]}>
+      <View style={styles.controlCard}>
+        <View style={styles.controlHeader}>
           <View style={[styles.modePill, isFinal && styles.modePillFinal]}>
-            <Text style={styles.modePillText}>{isFinal ? 'Final Review' : 'Live Match'}</Text>
+            <Text style={styles.modePillLabel}>{isFinal ? 'Final Review' : 'Live Match'}</Text>
           </View>
-          <Text style={[styles.matchStamp, isCompact && styles.matchStampCompact]}>
-            {isFinal && coachBoard.finishedAt ? `Closed ${coachBoard.finishedAt}` : 'Big score first. Swipe stats second.'}
-          </Text>
+          <Text style={styles.controlStamp}>{isFinal && coachBoard.finishedAt ? `Closed ${coachBoard.finishedAt}` : 'Choose the board layout you want live.'}</Text>
         </View>
 
-        <View style={[styles.scoreMainRow, isCompact && styles.scoreMainRowCompact]}>
-          <View style={[styles.teamScorePanel, isCompact && styles.teamScorePanelCompact]}>
-            <Text numberOfLines={2} style={[styles.teamName, isCompact && styles.teamNameCompact]}>{homeDisplayLabel}</Text>
-            <View style={[styles.serveBadge, isCompact && styles.serveBadgeCompact, coachBoard.possession === 'home' && styles.serveBadgeActive]}>
-              <Text style={[styles.serveBadgeText, isCompact && styles.serveBadgeTextCompact, coachBoard.possession === 'home' && styles.serveBadgeTextActive]}>
-                {homeServeState}
-              </Text>
-            </View>
-            <View style={[styles.scoreValueFrame, isCompact && styles.scoreValueFrameCompact]}>
-              <Text
-                adjustsFontSizeToFit
-                numberOfLines={1}
-                style={[
-                  styles.scoreValue,
-                  isCompact && styles.scoreValueCompact,
-                  isVeryCompact && styles.scoreValueVeryCompact,
-                ]}>
-                {coachBoard.homeScore}
-              </Text>
-            </View>
-
-            {!isFinal ? (
-              <>
-                <View style={[styles.pointControlRow, isCompact && styles.pointControlRowCompact]}>
-                  <MiniActionButton label="-1" onPress={() => onAdjustScore('home', -1)} tone="secondary" />
-                  <MiniActionButton label="+1" onPress={() => onAdjustScore('home', 1)} />
-                </View>
-                <View style={[styles.setControlRow, isCompact && styles.setControlRowCompact]}>
-                  <Text style={[styles.setValue, isCompact && styles.setValueCompact]}>Sets {coachBoard.homeSets}</Text>
-                  <View style={[styles.setControlButtons, isCompact && styles.setControlButtonsCompact]}>
-                    <MiniActionButton label="-S" onPress={() => onAdjustSets('home', -1)} tone="secondary" />
-                    <MiniActionButton label="+S" onPress={() => onAdjustSets('home', 1)} />
-                  </View>
-                </View>
-              </>
-            ) : (
-              <Text style={[styles.finalSetText, isCompact && styles.finalSetTextCompact]}>Sets {coachBoard.homeSets}</Text>
-            )}
-          </View>
-
-          <View style={[styles.scoreCenterRail, isCompact && styles.scoreCenterRailCompact]}>
-            <Text style={[styles.centerEyebrow, isCompact && styles.centerEyebrowCompact]}>Match</Text>
-            <Text style={[styles.centerValue, isCompact && styles.centerValueCompact]}>VS</Text>
-            <Text style={[styles.centerMeta, isCompact && styles.centerMetaCompact]}>{centerMetaCopy}</Text>
-          </View>
-
-          <View style={[styles.teamScorePanel, isCompact && styles.teamScorePanelCompact]}>
-            <Text numberOfLines={2} style={[styles.teamName, isCompact && styles.teamNameCompact]}>{awayDisplayLabel}</Text>
-            <View style={[styles.serveBadge, isCompact && styles.serveBadgeCompact, coachBoard.possession === 'away' && styles.serveBadgeActive]}>
-              <Text style={[styles.serveBadgeText, isCompact && styles.serveBadgeTextCompact, coachBoard.possession === 'away' && styles.serveBadgeTextActive]}>
-                {awayServeState}
-              </Text>
-            </View>
-            <View style={[styles.scoreValueFrame, isCompact && styles.scoreValueFrameCompact]}>
-              <Text
-                adjustsFontSizeToFit
-                numberOfLines={1}
-                style={[
-                  styles.scoreValue,
-                  isCompact && styles.scoreValueCompact,
-                  isVeryCompact && styles.scoreValueVeryCompact,
-                ]}>
-                {coachBoard.awayScore}
-              </Text>
-            </View>
-
-            {!isFinal ? (
-              <>
-                <View style={[styles.pointControlRow, isCompact && styles.pointControlRowCompact]}>
-                  <MiniActionButton label="-1" onPress={() => onAdjustScore('away', -1)} tone="secondary" />
-                  <MiniActionButton label="+1" onPress={() => onAdjustScore('away', 1)} />
-                </View>
-                <View style={[styles.setControlRow, isCompact && styles.setControlRowCompact]}>
-                  <Text style={[styles.setValue, isCompact && styles.setValueCompact]}>Sets {coachBoard.awaySets}</Text>
-                  <View style={[styles.setControlButtons, isCompact && styles.setControlButtonsCompact]}>
-                    <MiniActionButton label="-S" onPress={() => onAdjustSets('away', -1)} tone="secondary" />
-                    <MiniActionButton label="+S" onPress={() => onAdjustSets('away', 1)} />
-                  </View>
-                </View>
-              </>
-            ) : (
-              <Text style={[styles.finalSetText, isCompact && styles.finalSetTextCompact]}>Sets {coachBoard.awaySets}</Text>
-            )}
-          </View>
+        <Text style={styles.controlTitle}>View Control</Text>
+        <View style={styles.toggleGrid}>
+          <ToggleChip active={showScoreboard} label="Scoreboard" onPress={() => onToggleVisibility('showScoreboard')} />
+          <ToggleChip active={showStats} label="Stats" onPress={() => onToggleVisibility('showStats')} />
+          <ToggleChip active={visibility.showAwayScoreboard} label="Away Board" onPress={() => onToggleVisibility('showAwayScoreboard')} />
+          <ToggleChip active={visibility.showAwayStats} label="Away Stats" onPress={() => onToggleVisibility('showAwayStats')} />
         </View>
 
         {!isFinal ? (
-          <View style={styles.scoreFooter}>
-            <View style={[styles.serveToggleRow, isCompact && styles.serveToggleRowCompact]}>
-              <MiniActionButton
-                label="Home Serve"
-                onPress={() => onSetPossession('home')}
-                tone={coachBoard.possession === 'home' ? 'primary' : 'secondary'}
-              />
-              <MiniActionButton
-                label="Away Serve"
-                onPress={() => onSetPossession('away')}
-                tone={coachBoard.possession === 'away' ? 'primary' : 'secondary'}
-              />
+          <View style={styles.controlSection}>
+            <Text style={styles.cardEyebrow}>Serve Control</Text>
+            <View style={styles.actionRow}>
+              <MiniActionButton label="Home Serve" onPress={() => onSetPossession('home')} tone={coachBoard.possession === 'home' ? 'primary' : 'secondary'} />
+              {showAwayScoreboard ? (
+                <MiniActionButton label="Away Serve" onPress={() => onSetPossession('away')} tone={coachBoard.possession === 'away' ? 'primary' : 'secondary'} />
+              ) : null}
             </View>
+          </View>
+        ) : null}
 
-            <View style={[styles.modeActionRow, isCompact && styles.modeActionRowCompact]}>
-              <View style={styles.modeButtonWrap}>
-                <NeonButton label="Finish Match" onPress={onFinishMatch} />
-              </View>
-              <View style={styles.modeButtonWrap}>
-                <NeonButton label="Reset Match" onPress={onStartNewMatch} tone="secondary" />
-              </View>
-            </View>
-          </View>
-        ) : (
-          <View style={[styles.modeActionRow, isCompact && styles.modeActionRowCompact]}>
-            <View style={styles.modeButtonWrap}>
+        <View style={styles.actionRowWide}>
+          {isFinal ? (
+            <>
               <NeonButton label="Reopen Match" onPress={onResumeMatch} />
-            </View>
-            <View style={styles.modeButtonWrap}>
               <NeonButton label="New Match" onPress={onStartNewMatch} tone="secondary" />
-            </View>
-          </View>
-        )}
+            </>
+          ) : (
+            <>
+              <NeonButton label="Finish Match" onPress={onFinishMatch} />
+              <NeonButton label="Reset Match" onPress={onStartNewMatch} tone="secondary" />
+            </>
+          )}
+        </View>
       </View>
 
-      {isFinal ? (
-        <>
-          <View style={styles.reviewIntro}>
-            <Text style={styles.reviewIntroEyebrow}>Finished Match</Text>
-            <Text style={styles.reviewIntroTitle}>Individual team statistics</Text>
-            <Text style={styles.reviewIntroCopy}>Every player line stays visible here after the match is closed so you can review both teams cleanly.</Text>
-          </View>
-          <ReviewTeamCard roster={coachBoard.homeRoster} teamName={homeDisplayLabel} />
-          <ReviewTeamCard roster={coachBoard.awayRoster} teamName={awayDisplayLabel} />
-        </>
-      ) : (
-        <View style={[styles.panelCard, isCompact && styles.panelCardCompact]}>
-          <View style={styles.panelHeader}>
-            <View>
-              <Text style={styles.panelEyebrow}>Swipeable Stat Panel</Text>
-              <Text style={[styles.panelTitle, isCompact && styles.panelTitleCompact]}>{activeStatCategory.label}</Text>
-            </View>
-            <Text style={styles.panelHint}>{activeStatCategory.hint}</Text>
-          </View>
-
-          <ScrollView
-            horizontal
-            onMomentumScrollEnd={handlePageEnd}
-            pagingEnabled
-            ref={pagerRef}
-            showsHorizontalScrollIndicator={false}
-            style={styles.pager}>
-            {scoreboardStatCategories.map(category => (
-              <View key={category.id} style={[styles.pagerPage, {width: panelPageWidth}]}> 
-                <QuickTeamPanel
-                  isCompact={isCompact}
-                  isVeryCompact={isVeryCompact}
-                  onAdjustPlayerStat={onAdjustPlayerStat}
-                  players={coachBoard.homeRoster}
-                  statCategory={category}
-                  teamLabel={homeDisplayLabel}
-                  teamSide="home"
-                />
-                <QuickTeamPanel
-                  isCompact={isCompact}
-                  isVeryCompact={isVeryCompact}
-                  onAdjustPlayerStat={onAdjustPlayerStat}
-                  players={coachBoard.awayRoster}
-                  statCategory={category}
-                  teamLabel={awayDisplayLabel}
-                  teamSide="away"
-                />
-              </View>
-            ))}
-          </ScrollView>
-
-          <View style={styles.pageDotsRow}>
-            {scoreboardStatCategories.map((category, index) => (
-              <View key={category.id} style={[styles.pageDot, activeStatIndex === index && styles.pageDotActive]} />
-            ))}
-          </View>
-
-          <ScrollView contentContainerStyle={styles.categoryChipRow} horizontal showsHorizontalScrollIndicator={false}>
-            {scoreboardStatCategories.map((category, index) => (
-              <CategoryChip
-                active={activeStatIndex === index}
-                key={category.id}
-                label={category.label}
-                onPress={() => jumpToStatPage(index)}
-              />
-            ))}
-          </ScrollView>
+      {!showScoreboard && !showStats ? (
+        <View style={styles.placeholderCard}>
+          <Text style={styles.cardEyebrow}>Nothing Active</Text>
+          <Text style={styles.placeholderTitle}>Turn a section back on</Text>
+          <Text style={styles.placeholderCopy}>The scoreboard and stat panels are both hidden right now. Use the toggle row above to bring either one back.</Text>
         </View>
-      )}
+      ) : null}
+
+      {showScoreboard ? (
+        <View style={styles.boardCard}>
+          <View style={styles.boardRow}>
+            <BigScorePanel
+              isFinal={isFinal}
+              isNarrow={isNarrow}
+              onAdjustScore={onAdjustScore}
+              onAdjustSets={onAdjustSets}
+              possession={coachBoard.possession}
+              score={coachBoard.homeScore}
+              sets={coachBoard.homeSets}
+              side="home"
+              title="HOME"
+            />
+            {showAwayScoreboard ? (
+              <>
+                <View style={styles.centerRail}>
+                  <Text style={styles.centerRailEyebrow}>Match</Text>
+                  <Text style={styles.centerRailValue}>VS</Text>
+                  <Text style={styles.centerRailCopy}>{coachBoard.possession === 'home' ? 'Serve HOME' : 'Serve AWAY'}</Text>
+                </View>
+                <BigScorePanel
+                  isFinal={isFinal}
+                  isNarrow={isNarrow}
+                  onAdjustScore={onAdjustScore}
+                  onAdjustSets={onAdjustSets}
+                  possession={coachBoard.possession}
+                  score={coachBoard.awayScore}
+                  sets={coachBoard.awaySets}
+                  side="away"
+                  title="AWAY"
+                />
+              </>
+            ) : (
+              <View style={styles.hiddenSideCard}>
+                <Text style={styles.cardEyebrow}>Away Board Hidden</Text>
+                <Text style={styles.hiddenSideCopy}>The live board is focused on home only.</Text>
+              </View>
+            )}
+          </View>
+        </View>
+      ) : null}
+
+      {showStats ? (
+        isFinal ? (
+          <>
+            <View style={styles.reviewIntro}>
+              <Text style={styles.cardEyebrow}>Finished Match</Text>
+              <Text style={styles.reviewIntroTitle}>Player stat review</Text>
+              <Text style={styles.reviewIntroCopy}>Hide the away stat side above whenever you only want your own team visible here.</Text>
+            </View>
+            <ReviewTable roster={coachBoard.homeRoster} title="HOME" />
+            {showAwayStats ? <ReviewTable roster={coachBoard.awayRoster} title="AWAY" /> : null}
+          </>
+        ) : (
+          <View style={styles.statsCard}>
+            <View style={styles.statsHeader}>
+              <View>
+                <Text style={styles.cardEyebrow}>Swipeable Panel</Text>
+                <Text style={styles.statsTitle}>{activeStatCategory.label}</Text>
+              </View>
+              <Text style={styles.statsHint}>{activeStatCategory.hint}</Text>
+            </View>
+
+            <ScrollView horizontal pagingEnabled onMomentumScrollEnd={handlePageEnd} ref={pagerRef} showsHorizontalScrollIndicator={false}>
+              {scoreboardStatCategories.map(category => (
+                <View key={category.id} style={[styles.statsPage, {width: cardWidth}]}> 
+                  <TeamStatPanel players={coachBoard.homeRoster} side="home" statCategory={category} title="HOME" onAdjustPlayerStat={onAdjustPlayerStat} />
+                  {showAwayStats ? <TeamStatPanel players={coachBoard.awayRoster} side="away" statCategory={category} title="AWAY" onAdjustPlayerStat={onAdjustPlayerStat} /> : null}
+                </View>
+              ))}
+            </ScrollView>
+
+            <View style={styles.dotRow}>
+              {scoreboardStatCategories.map((category, index) => (
+                <View key={category.id} style={[styles.dot, activeStatIndex === index && styles.dotActive]} />
+              ))}
+            </View>
+
+            <ScrollView horizontal contentContainerStyle={styles.categoryRow} showsHorizontalScrollIndicator={false}>
+              {scoreboardStatCategories.map((category, index) => (
+                <CategoryChip active={activeStatIndex === index} key={category.id} label={category.label} onPress={() => jumpToStatPage(index)} />
+              ))}
+            </ScrollView>
+          </View>
+        )
+      ) : null}
     </ScrollView>
   );
 }
@@ -408,357 +349,109 @@ const styles = StyleSheet.create({
     paddingTop: spacing.xl,
     paddingBottom: spacing.xxl,
   },
-  contentCompact: {
-    paddingHorizontal: spacing.md,
+  pressed: {
+    transform: [{scale: 0.98}],
   },
-  scoreCard: {
+  controlCard: {
     borderRadius: 22,
     borderWidth: 2,
-    borderColor: 'rgba(255, 110, 209, 0.5)',
-    backgroundColor: 'rgba(18, 6, 25, 0.98)',
+    borderColor: 'rgba(255, 110, 209, 0.44)',
+    backgroundColor: 'rgba(18, 6, 25, 0.96)',
     padding: spacing.lg,
     marginBottom: spacing.lg,
-    shadowColor: colors.primaryBright,
-    shadowOpacity: 0.3,
-    shadowRadius: 18,
-    shadowOffset: {
-      width: 0,
-      height: 0,
-    },
-    elevation: 16,
   },
-  scoreCardCompact: {
-    padding: spacing.md,
-  },
-  matchHeaderRow: {
+  controlHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: spacing.md,
     gap: spacing.sm,
-  },
-  matchHeaderRowCompact: {
-    alignItems: 'flex-start',
-    flexDirection: 'column',
+    marginBottom: spacing.md,
   },
   modePill: {
     borderRadius: radii.round,
     borderWidth: 1,
-    borderColor: 'rgba(255, 110, 209, 0.35)',
-    backgroundColor: 'rgba(255, 63, 164, 0.16)',
+    borderColor: 'rgba(255, 110, 209, 0.34)',
+    backgroundColor: 'rgba(255, 63, 164, 0.18)',
     paddingHorizontal: spacing.md,
     paddingVertical: 8,
   },
   modePillFinal: {
+    borderColor: 'rgba(126, 249, 255, 0.34)',
     backgroundColor: 'rgba(126, 249, 255, 0.14)',
-    borderColor: 'rgba(126, 249, 255, 0.35)',
   },
-  modePillText: {
+  modePillLabel: {
     color: colors.text,
     fontSize: 12,
-    fontWeight: '700',
+    fontWeight: '800',
     letterSpacing: 1,
     textTransform: 'uppercase',
   },
-  matchStamp: {
+  controlStamp: {
     flex: 1,
     color: colors.textDim,
     fontSize: 12,
     textAlign: 'right',
   },
-  matchStampCompact: {
-    textAlign: 'left',
-  },
-  scoreMainRow: {
-    flexDirection: 'row',
-    alignItems: 'stretch',
-    justifyContent: 'space-between',
-    marginBottom: spacing.lg,
-    gap: spacing.sm,
-  },
-  scoreMainRowCompact: {
-    flexDirection: 'row',
-    alignItems: 'stretch',
-    gap: 6,
-  },
-  teamScorePanel: {
-    flex: 1,
-    borderRadius: 18,
-    borderWidth: 2,
-    borderColor: 'rgba(255, 110, 209, 0.44)',
-    backgroundColor: 'rgba(14, 6, 20, 0.96)',
-    padding: spacing.md,
-    alignItems: 'center',
-    shadowColor: colors.primaryBright,
-    shadowOpacity: 0.18,
-    shadowRadius: 12,
-    shadowOffset: {
-      width: 0,
-      height: 0,
-    },
-    elevation: 10,
-  },
-  teamScorePanelCompact: {
-    flex: 1,
-    width: 0,
-    minWidth: 0,
-    paddingHorizontal: 8,
-    paddingVertical: 10,
-  },
-  teamName: {
-    color: colors.primarySoft,
-    fontSize: 24,
-    fontWeight: '900',
-    letterSpacing: 2.4,
-    textAlign: 'center',
-    textTransform: 'uppercase',
-    textShadowColor: 'rgba(255, 110, 209, 0.9)',
-    textShadowOffset: {
-      width: 0,
-      height: 0,
-    },
-    textShadowRadius: 10,
-  },
-  teamNameCompact: {
-    fontSize: 16,
-    letterSpacing: 1.4,
-  },
-  serveBadge: {
-    marginTop: spacing.sm,
-    borderRadius: 12,
-    borderWidth: 2,
-    borderColor: 'rgba(255, 110, 209, 0.24)',
-    backgroundColor: 'rgba(10, 5, 16, 0.96)',
-    paddingHorizontal: spacing.md,
-    paddingVertical: 6,
-  },
-  serveBadgeActive: {
-    backgroundColor: 'rgba(255, 63, 164, 0.22)',
-    borderColor: 'rgba(255, 110, 209, 0.56)',
-    shadowColor: colors.primaryBright,
-    shadowOpacity: 0.18,
-    shadowRadius: 8,
-    shadowOffset: {
-      width: 0,
-      height: 0,
-    },
-    elevation: 6,
-  },
-  serveBadgeCompact: {
-    marginTop: 6,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 10,
-  },
-  serveBadgeText: {
-    color: colors.textDim,
-    fontSize: 11,
-    fontWeight: '700',
-    letterSpacing: 0.8,
-    textTransform: 'uppercase',
-  },
-  serveBadgeTextActive: {
+  controlTitle: {
     color: colors.text,
+    fontSize: 28,
+    fontWeight: '900',
+    letterSpacing: 1.8,
+    textTransform: 'uppercase',
+    marginBottom: spacing.sm,
+    textShadowColor: 'rgba(255, 110, 209, 0.82)',
+    textShadowOffset: {width: 0, height: 0},
+    textShadowRadius: 8,
   },
-  serveBadgeTextCompact: {
-    fontSize: 9,
-    letterSpacing: 0.7,
+  toggleGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.xs,
   },
-  scoreValueFrame: {
-    minWidth: 154,
+  toggleChip: {
+    borderRadius: 14,
+    borderWidth: 2,
+    minHeight: 40,
+    paddingHorizontal: spacing.md,
+    paddingVertical: 8,
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: 18,
-    borderWidth: 2,
-    borderColor: 'rgba(255, 110, 209, 0.48)',
-    backgroundColor: 'rgba(255, 63, 164, 0.1)',
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.xs,
-    marginVertical: spacing.sm,
-    shadowColor: colors.primaryBright,
-    shadowOpacity: 0.24,
-    shadowRadius: 14,
-    shadowOffset: {
-      width: 0,
-      height: 0,
-    },
-    elevation: 10,
   },
-  scoreValueFrameCompact: {
-    minWidth: 0,
-    width: '100%',
-    borderRadius: 14,
-    paddingHorizontal: 4,
-    paddingVertical: 4,
-    marginVertical: 6,
+  toggleChipActive: {
+    borderColor: 'rgba(255, 110, 209, 0.56)',
+    backgroundColor: 'rgba(255, 63, 164, 0.2)',
   },
-  scoreValue: {
-    color: colors.text,
-    fontSize: 96,
-    lineHeight: 100,
-    fontWeight: '900',
-    fontVariant: ['tabular-nums'],
-    includeFontPadding: false,
-    letterSpacing: 2.5,
-    textAlign: 'center',
-    textShadowColor: 'rgba(255, 110, 209, 0.95)',
-    textShadowOffset: {
-      width: 0,
-      height: 0,
-    },
-    textShadowRadius: 18,
+  toggleChipInactive: {
+    borderColor: 'rgba(126, 249, 255, 0.18)',
+    backgroundColor: 'rgba(11, 8, 18, 0.96)',
   },
-  scoreValueCompact: {
-    fontSize: 58,
-    lineHeight: 60,
-    letterSpacing: 1.2,
-  },
-  scoreValueVeryCompact: {
-    fontSize: 52,
-    lineHeight: 54,
-    letterSpacing: 1,
-  },
-  pointControlRow: {
-    width: '100%',
-    flexDirection: 'row',
-    gap: spacing.sm,
-    marginBottom: spacing.sm,
-  },
-  pointControlRowCompact: {
-    gap: 6,
-    marginBottom: 6,
-  },
-  setControlRow: {
-    width: '100%',
-    borderRadius: radii.md,
-    borderWidth: 1,
-    borderColor: 'rgba(126, 249, 255, 0.16)',
-    backgroundColor: 'rgba(8, 8, 14, 0.48)',
-    paddingHorizontal: spacing.sm,
-    paddingVertical: spacing.sm,
-    gap: spacing.sm,
-  },
-  setControlRowCompact: {
-    borderRadius: 12,
-    paddingHorizontal: 6,
-    paddingVertical: 6,
-    gap: 6,
-  },
-  setValue: {
-    color: colors.primarySoft,
-    fontSize: 13,
-    fontWeight: '700',
-    textAlign: 'center',
+  toggleChipLabel: {
+    fontSize: 11,
+    fontWeight: '800',
     letterSpacing: 0.9,
     textTransform: 'uppercase',
   },
-  setValueCompact: {
-    fontSize: 10,
-    letterSpacing: 0.7,
+  toggleChipLabelActive: {
+    color: colors.text,
   },
-  setControlButtons: {
+  toggleChipLabelInactive: {
+    color: colors.accent,
+  },
+  controlSection: {
+    marginTop: spacing.md,
+  },
+  actionRow: {
+    flexDirection: 'row',
+    gap: spacing.xs,
+  },
+  actionRowWide: {
     flexDirection: 'row',
     gap: spacing.sm,
-  },
-  setControlButtonsCompact: {
-    gap: 6,
-  },
-  finalSetText: {
-    color: colors.primarySoft,
-    fontSize: 18,
-    fontWeight: '700',
-    marginTop: spacing.sm,
-  },
-  finalSetTextCompact: {
-    fontSize: 14,
-    marginTop: 6,
-  },
-  scoreCenterRail: {
-    width: 76,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 4,
-  },
-  scoreCenterRailCompact: {
-    width: 46,
-    minWidth: 46,
-    flexDirection: 'column',
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderRadius: 12,
-    borderWidth: 2,
-    borderColor: 'rgba(126, 249, 255, 0.22)',
-    backgroundColor: 'rgba(8, 8, 14, 0.66)',
-    paddingHorizontal: 2,
-    paddingVertical: 6,
-    gap: 2,
-  },
-  centerEyebrow: {
-    color: colors.textDim,
-    fontSize: 11,
-    fontWeight: '700',
-    letterSpacing: 1,
-    textTransform: 'uppercase',
-  },
-  centerEyebrowCompact: {
-    fontSize: 8,
-    letterSpacing: 0.6,
-  },
-  centerValue: {
-    color: colors.primaryBright,
-    fontSize: 34,
-    fontWeight: '900',
-    letterSpacing: 3,
-    marginVertical: spacing.xs,
-    textShadowColor: 'rgba(255, 110, 209, 0.9)',
-    textShadowOffset: {
-      width: 0,
-      height: 0,
-    },
-    textShadowRadius: 12,
-  },
-  centerValueCompact: {
-    fontSize: 18,
-    letterSpacing: 1.6,
-    marginVertical: 0,
-  },
-  centerMeta: {
-    color: colors.textMuted,
-    fontSize: 11,
-    lineHeight: 16,
-    textAlign: 'center',
-  },
-  centerMetaCompact: {
-    flex: 0,
-    fontSize: 8,
-    lineHeight: 10,
-    textAlign: 'center',
-    marginLeft: 0,
-  },
-  scoreFooter: {
-    gap: spacing.md,
-  },
-  serveToggleRow: {
-    flexDirection: 'row',
-    gap: spacing.sm,
-  },
-  serveToggleRowCompact: {
-    flexDirection: 'column',
-  },
-  modeActionRow: {
-    flexDirection: 'row',
-    gap: spacing.sm,
-    marginTop: spacing.sm,
-  },
-  modeActionRowCompact: {
-    flexDirection: 'column',
-  },
-  modeButtonWrap: {
-    flex: 1,
+    marginTop: spacing.md,
   },
   miniButton: {
     flex: 1,
-    minHeight: 36,
+    minHeight: 38,
     borderRadius: 12,
     borderWidth: 2,
     alignItems: 'center',
@@ -767,19 +460,16 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
   },
   miniButtonPrimary: {
+    borderColor: 'rgba(255, 110, 209, 0.46)',
     backgroundColor: 'rgba(255, 63, 164, 0.18)',
-    borderColor: 'rgba(255, 110, 209, 0.34)',
   },
   miniButtonSecondary: {
-    backgroundColor: 'rgba(14, 11, 22, 0.92)',
     borderColor: 'rgba(126, 249, 255, 0.18)',
-  },
-  miniButtonPressed: {
-    transform: [{scale: 0.98}],
+    backgroundColor: 'rgba(11, 8, 18, 0.96)',
   },
   miniButtonLabel: {
     fontSize: 10,
-    fontWeight: '700',
+    fontWeight: '800',
     letterSpacing: 0.7,
     textTransform: 'uppercase',
   },
@@ -789,147 +479,225 @@ const styles = StyleSheet.create({
   miniButtonLabelSecondary: {
     color: colors.accent,
   },
-  panelCard: {
+  boardCard: {
     borderRadius: 22,
     borderWidth: 2,
-    borderColor: 'rgba(255, 110, 209, 0.42)',
-    backgroundColor: 'rgba(16, 6, 23, 0.96)',
-    padding: spacing.lg,
-    shadowColor: colors.primaryBright,
-    shadowOpacity: 0.24,
-    shadowRadius: 16,
-    shadowOffset: {
-      width: 0,
-      height: 0,
-    },
-    elevation: 12,
-  },
-  panelCardCompact: {
+    borderColor: 'rgba(255, 110, 209, 0.44)',
+    backgroundColor: 'rgba(18, 6, 25, 0.96)',
     padding: spacing.md,
+    marginBottom: spacing.lg,
   },
-  panelHeader: {
-    marginBottom: spacing.md,
+  boardRow: {
+    flexDirection: 'row',
+    alignItems: 'stretch',
     gap: spacing.xs,
   },
-  panelEyebrow: {
-    color: colors.textDim,
-    fontSize: 12,
-    fontWeight: '700',
-    letterSpacing: 1,
-    textTransform: 'uppercase',
-    marginBottom: 4,
+  scorePanel: {
+    flex: 1,
+    minWidth: 0,
+    borderRadius: 18,
+    borderWidth: 2,
+    borderColor: 'rgba(255, 110, 209, 0.34)',
+    backgroundColor: 'rgba(12, 7, 18, 0.96)',
+    padding: spacing.sm,
+    alignItems: 'center',
   },
-  panelTitle: {
-    color: colors.text,
-    fontSize: 30,
+  scoreTitle: {
+    color: colors.primarySoft,
+    fontSize: 20,
     fontWeight: '900',
     letterSpacing: 1.8,
     textTransform: 'uppercase',
-    textShadowColor: 'rgba(255, 110, 209, 0.88)',
-    textShadowOffset: {
-      width: 0,
-      height: 0,
-    },
-    textShadowRadius: 10,
+    textAlign: 'center',
   },
-  panelTitleCompact: {
-    fontSize: 24,
+  scoreTitleNarrow: {
+    fontSize: 16,
+    letterSpacing: 1.2,
   },
-  panelHint: {
+  servePill: {
+    borderRadius: 999,
+    borderWidth: 2,
+    borderColor: 'rgba(255, 110, 209, 0.24)',
+    backgroundColor: 'rgba(10, 5, 16, 0.96)',
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 5,
+    marginTop: 6,
+  },
+  servePillActive: {
+    borderColor: 'rgba(255, 110, 209, 0.56)',
+    backgroundColor: 'rgba(255, 63, 164, 0.18)',
+  },
+  servePillLabel: {
+    color: colors.textDim,
+    fontSize: 10,
+    fontWeight: '800',
+    textTransform: 'uppercase',
+  },
+  servePillLabelActive: {
+    color: colors.text,
+  },
+  scoreValueWrap: {
+    width: '100%',
+    borderRadius: 16,
+    borderWidth: 2,
+    borderColor: 'rgba(255, 110, 209, 0.46)',
+    backgroundColor: 'rgba(255, 63, 164, 0.1)',
+    paddingVertical: 4,
+    marginVertical: spacing.sm,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  scoreValue: {
+    color: colors.text,
+    fontSize: 72,
+    lineHeight: 76,
+    fontWeight: '900',
+    fontVariant: ['tabular-nums'],
+    includeFontPadding: false,
+    textAlign: 'center',
+    textShadowColor: 'rgba(255, 110, 209, 0.92)',
+    textShadowOffset: {width: 0, height: 0},
+    textShadowRadius: 12,
+  },
+  scoreValueNarrow: {
+    fontSize: 54,
+    lineHeight: 58,
+  },
+  setReadout: {
+    color: colors.primarySoft,
+    fontSize: 16,
+    fontWeight: '800',
+    marginTop: spacing.xs,
+  },
+  rowGapSmall: {
+    width: '100%',
+    gap: spacing.xs,
+  },
+  centerRail: {
+    width: 52,
+    minWidth: 52,
+    borderRadius: 14,
+    borderWidth: 2,
+    borderColor: 'rgba(126, 249, 255, 0.22)',
+    backgroundColor: 'rgba(8, 8, 14, 0.72)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 4,
+    paddingVertical: spacing.sm,
+  },
+  centerRailEyebrow: {
+    color: colors.textDim,
+    fontSize: 8,
+    fontWeight: '800',
+    letterSpacing: 0.7,
+    textTransform: 'uppercase',
+  },
+  centerRailValue: {
+    color: colors.primaryBright,
+    fontSize: 18,
+    fontWeight: '900',
+    letterSpacing: 1.6,
+    marginVertical: 2,
+  },
+  centerRailCopy: {
+    color: colors.textMuted,
+    fontSize: 8,
+    lineHeight: 10,
+    textAlign: 'center',
+  },
+  hiddenSideCard: {
+    width: 96,
+    minWidth: 96,
+    borderRadius: 16,
+    borderWidth: 2,
+    borderColor: 'rgba(126, 249, 255, 0.22)',
+    backgroundColor: 'rgba(8, 8, 14, 0.72)',
+    padding: spacing.sm,
+    justifyContent: 'center',
+  },
+  hiddenSideCopy: {
+    color: colors.textMuted,
+    fontSize: 11,
+    lineHeight: 16,
+  },
+  statsCard: {
+    borderRadius: 22,
+    borderWidth: 2,
+    borderColor: 'rgba(255, 110, 209, 0.44)',
+    backgroundColor: 'rgba(18, 6, 25, 0.96)',
+    padding: spacing.lg,
+  },
+  statsHeader: {
+    marginBottom: spacing.md,
+    gap: spacing.xs,
+  },
+  cardEyebrow: {
+    color: colors.accent,
+    fontSize: 11,
+    fontWeight: '800',
+    letterSpacing: 1.4,
+    textTransform: 'uppercase',
+    marginBottom: 4,
+  },
+  statsTitle: {
+    color: colors.text,
+    fontSize: 28,
+    fontWeight: '900',
+    letterSpacing: 1.7,
+    textTransform: 'uppercase',
+    textShadowColor: 'rgba(255, 110, 209, 0.82)',
+    textShadowOffset: {width: 0, height: 0},
+    textShadowRadius: 8,
+  },
+  statsHint: {
     color: colors.textMuted,
     fontSize: 13,
     lineHeight: 18,
   },
-  pager: {
-    marginHorizontal: -spacing.xs,
-  },
-  pagerPage: {
+  statsPage: {
     gap: spacing.md,
-    paddingHorizontal: spacing.xs,
   },
-  quickTeamPanel: {
+  statTeamCard: {
     borderRadius: 18,
     borderWidth: 2,
-    borderColor: 'rgba(255, 110, 209, 0.34)',
-    backgroundColor: 'rgba(10, 4, 15, 0.94)',
+    borderColor: 'rgba(255, 110, 209, 0.3)',
+    backgroundColor: 'rgba(12, 7, 18, 0.96)',
     padding: spacing.md,
-    shadowColor: colors.primaryBright,
-    shadowOpacity: 0.14,
-    shadowRadius: 10,
-    shadowOffset: {
-      width: 0,
-      height: 0,
-    },
-    elevation: 8,
   },
-  quickTeamPanelCompact: {
-    padding: spacing.sm,
-  },
-  quickTeamHeader: {
+  statTeamHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: spacing.md,
     gap: spacing.sm,
+    marginBottom: spacing.md,
   },
-  quickTeamHeaderCompact: {
-    alignItems: 'flex-start',
-    flexDirection: 'column',
-  },
-  quickTeamTitleWrap: {
-    flexShrink: 1,
-  },
-  quickTeamEyebrow: {
-    color: colors.textDim,
-    fontSize: 11,
-    fontWeight: '700',
-    letterSpacing: 1,
-    textTransform: 'uppercase',
-    marginBottom: 4,
-  },
-  quickTeamTitle: {
+  statTeamTitle: {
     color: colors.text,
     fontSize: 22,
     fontWeight: '900',
-    letterSpacing: 1.6,
+    letterSpacing: 1.4,
     textTransform: 'uppercase',
-    textShadowColor: 'rgba(255, 110, 209, 0.72)',
-    textShadowOffset: {
-      width: 0,
-      height: 0,
-    },
-    textShadowRadius: 8,
   },
-  quickTeamTotalPill: {
-    minWidth: 82,
+  totalPill: {
+    minWidth: 76,
     borderRadius: 14,
     borderWidth: 2,
-    borderColor: 'rgba(255, 110, 209, 0.4)',
+    borderColor: 'rgba(255, 110, 209, 0.36)',
     backgroundColor: 'rgba(255, 63, 164, 0.12)',
-    paddingHorizontal: spacing.sm,
-    paddingVertical: spacing.sm,
     alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 8,
   },
-  quickTeamTotalPillCompact: {
-    alignSelf: 'stretch',
-  },
-  quickTeamTotalValue: {
+  totalPillValue: {
     color: colors.text,
     fontSize: 24,
     fontWeight: '900',
     fontVariant: ['tabular-nums'],
-    letterSpacing: 1.2,
-    textShadowColor: 'rgba(255, 110, 209, 0.82)',
-    textShadowOffset: {
-      width: 0,
-      height: 0,
-    },
-    textShadowRadius: 8,
   },
-  quickTeamTotalLabel: {
+  totalPillLabel: {
     color: colors.textMuted,
     fontSize: 10,
-    fontWeight: '700',
+    fontWeight: '800',
     textTransform: 'uppercase',
   },
   playerGrid: {
@@ -938,45 +706,24 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     rowGap: spacing.sm,
   },
-  playerTile: {
+  playerCard: {
     width: '48.5%',
     borderRadius: 16,
     borderWidth: 2,
-    borderColor: 'rgba(255, 110, 209, 0.28)',
-    backgroundColor: 'rgba(20, 8, 28, 0.94)',
+    borderColor: 'rgba(255, 110, 209, 0.26)',
+    backgroundColor: 'rgba(18, 8, 24, 0.96)',
     padding: spacing.sm,
-    shadowColor: colors.primaryBright,
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    shadowOffset: {
-      width: 0,
-      height: 0,
-    },
-    elevation: 5,
-  },
-  playerTileCompact: {
-    width: '100%',
-  },
-  playerTileTop: {
-    marginBottom: spacing.sm,
   },
   playerJersey: {
     color: colors.primaryBright,
     fontSize: 22,
     fontWeight: '900',
     fontVariant: ['tabular-nums'],
-    letterSpacing: 1.4,
-    textShadowColor: 'rgba(255, 110, 209, 0.8)',
-    textShadowOffset: {
-      width: 0,
-      height: 0,
-    },
-    textShadowRadius: 8,
   },
   playerName: {
     color: colors.text,
     fontSize: 13,
-    fontWeight: '700',
+    fontWeight: '800',
   },
   playerRole: {
     color: colors.textDim,
@@ -984,46 +731,16 @@ const styles = StyleSheet.create({
     marginTop: 2,
     textTransform: 'uppercase',
   },
-  playerStatValue: {
+  playerValue: {
     color: colors.text,
-    fontSize: 30,
+    fontSize: 28,
     fontWeight: '900',
-    fontVariant: ['tabular-nums'],
-    letterSpacing: 1.4,
-    marginBottom: spacing.sm,
+    marginVertical: spacing.sm,
     textShadowColor: 'rgba(255, 110, 209, 0.84)',
-    textShadowOffset: {
-      width: 0,
-      height: 0,
-    },
-    textShadowRadius: 10,
+    textShadowOffset: {width: 0, height: 0},
+    textShadowRadius: 8,
   },
-  playerActionRow: {
-    flexDirection: 'row',
-    gap: spacing.xs,
-  },
-  pageDotsRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing.xs,
-    marginTop: spacing.md,
-  },
-  pageDot: {
-    width: 10,
-    height: 10,
-    borderRadius: 3,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 110, 209, 0.28)',
-    backgroundColor: 'rgba(255, 255, 255, 0.12)',
-  },
-  pageDotActive: {
-    width: 24,
-    borderRadius: 4,
-    borderColor: 'rgba(255, 110, 209, 0.64)',
-    backgroundColor: 'rgba(255, 63, 164, 0.76)',
-  },
-  categoryChipRow: {
+  categoryRow: {
     gap: spacing.sm,
     paddingTop: spacing.md,
     paddingBottom: 2,
@@ -1037,54 +754,52 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
   },
   categoryChipActive: {
-    backgroundColor: 'rgba(255, 63, 164, 0.22)',
-    borderColor: 'rgba(255, 110, 209, 0.52)',
-    shadowColor: colors.primaryBright,
-    shadowOpacity: 0.18,
-    shadowRadius: 8,
-    shadowOffset: {
-      width: 0,
-      height: 0,
-    },
-    elevation: 6,
+    borderColor: 'rgba(255, 110, 209, 0.54)',
+    backgroundColor: 'rgba(255, 63, 164, 0.2)',
   },
-  categoryChipPressed: {
-    transform: [{scale: 0.98}],
-  },
-  categoryChipText: {
+  categoryChipLabel: {
     color: colors.textMuted,
     fontSize: 12,
-    fontWeight: '700',
+    fontWeight: '800',
     letterSpacing: 0.8,
     textTransform: 'uppercase',
   },
-  categoryChipTextActive: {
+  categoryChipLabelActive: {
     color: colors.text,
+  },
+  dotRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: spacing.xs,
+    marginTop: spacing.md,
+  },
+  dot: {
+    width: 10,
+    height: 10,
+    borderRadius: 3,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 110, 209, 0.28)',
+    backgroundColor: 'rgba(255, 255, 255, 0.12)',
+  },
+  dotActive: {
+    width: 24,
+    borderRadius: 4,
+    borderColor: 'rgba(255, 110, 209, 0.64)',
+    backgroundColor: 'rgba(255, 63, 164, 0.76)',
   },
   reviewIntro: {
     marginBottom: spacing.md,
-  },
-  reviewIntroEyebrow: {
-    color: colors.textDim,
-    fontSize: 12,
-    fontWeight: '700',
-    letterSpacing: 1,
-    textTransform: 'uppercase',
-    marginBottom: 4,
   },
   reviewIntroTitle: {
     color: colors.text,
     fontSize: 28,
     fontWeight: '900',
-    letterSpacing: 1.8,
+    letterSpacing: 1.6,
     textTransform: 'uppercase',
     marginBottom: 6,
     textShadowColor: 'rgba(255, 110, 209, 0.82)',
-    textShadowOffset: {
-      width: 0,
-      height: 0,
-    },
-    textShadowRadius: 10,
+    textShadowOffset: {width: 0, height: 0},
+    textShadowRadius: 8,
   },
   reviewIntroCopy: {
     color: colors.textMuted,
@@ -1095,41 +810,17 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     borderWidth: 2,
     borderColor: 'rgba(255, 110, 209, 0.42)',
-    backgroundColor: 'rgba(16, 6, 23, 0.96)',
+    backgroundColor: 'rgba(18, 6, 25, 0.96)',
     padding: spacing.lg,
     marginBottom: spacing.md,
-    shadowColor: colors.primaryBright,
-    shadowOpacity: 0.22,
-    shadowRadius: 14,
-    shadowOffset: {
-      width: 0,
-      height: 0,
-    },
-    elevation: 10,
-  },
-  reviewHeader: {
-    marginBottom: spacing.md,
-  },
-  reviewEyebrow: {
-    color: colors.textDim,
-    fontSize: 12,
-    fontWeight: '700',
-    letterSpacing: 1,
-    textTransform: 'uppercase',
-    marginBottom: 4,
   },
   reviewTitle: {
     color: colors.text,
     fontSize: 24,
     fontWeight: '900',
-    letterSpacing: 1.8,
+    letterSpacing: 1.4,
     textTransform: 'uppercase',
-    textShadowColor: 'rgba(255, 110, 209, 0.8)',
-    textShadowOffset: {
-      width: 0,
-      height: 0,
-    },
-    textShadowRadius: 8,
+    marginBottom: spacing.md,
   },
   reviewTotalsRow: {
     flexDirection: 'row',
@@ -1138,32 +829,24 @@ const styles = StyleSheet.create({
     marginBottom: spacing.md,
   },
   reviewTotalPill: {
-    minWidth: 92,
+    minWidth: 82,
     marginRight: spacing.sm,
     borderRadius: 14,
     borderWidth: 2,
-    borderColor: 'rgba(255, 110, 209, 0.32)',
+    borderColor: 'rgba(255, 110, 209, 0.3)',
     backgroundColor: 'rgba(255, 63, 164, 0.12)',
     paddingHorizontal: spacing.sm,
-    paddingVertical: spacing.sm,
+    paddingVertical: 8,
   },
   reviewTotalValue: {
     color: colors.text,
     fontSize: 22,
     fontWeight: '900',
-    fontVariant: ['tabular-nums'],
-    letterSpacing: 1.2,
-    textShadowColor: 'rgba(255, 110, 209, 0.76)',
-    textShadowOffset: {
-      width: 0,
-      height: 0,
-    },
-    textShadowRadius: 8,
   },
   reviewTotalLabel: {
     color: colors.textMuted,
-    fontSize: 11,
-    fontWeight: '700',
+    fontSize: 10,
+    fontWeight: '800',
     textTransform: 'uppercase',
   },
   reviewTable: {
@@ -1171,10 +854,7 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     overflow: 'hidden',
     borderWidth: 2,
-    borderColor: 'rgba(255, 110, 209, 0.28)',
-  },
-  reviewHeaderRow: {
-    backgroundColor: 'rgba(255, 63, 164, 0.2)',
+    borderColor: 'rgba(255, 110, 209, 0.26)',
   },
   reviewRow: {
     flexDirection: 'row',
@@ -1183,27 +863,48 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: 'rgba(255, 110, 209, 0.08)',
   },
+  reviewHeaderRow: {
+    backgroundColor: 'rgba(255, 63, 164, 0.18)',
+  },
   reviewCell: {
     color: colors.text,
     paddingHorizontal: spacing.sm,
     paddingVertical: spacing.sm,
     fontSize: 12,
   },
-  reviewCellJersey: {
+  reviewJerseyCell: {
     width: 56,
     color: colors.primaryBright,
-    fontSize: 16,
     fontWeight: '900',
-    fontVariant: ['tabular-nums'],
-    letterSpacing: 1,
   },
-  reviewCellName: {
+  reviewNameCell: {
     width: 180,
-    fontWeight: '700',
+    fontWeight: '800',
   },
-  reviewCellStat: {
+  reviewStatCell: {
     width: 62,
     textAlign: 'center',
-    fontWeight: '700',
+    fontWeight: '800',
+  },
+  placeholderCard: {
+    borderRadius: 18,
+    borderWidth: 2,
+    borderColor: 'rgba(126, 249, 255, 0.22)',
+    backgroundColor: 'rgba(10, 8, 18, 0.92)',
+    padding: spacing.md,
+    marginBottom: spacing.lg,
+  },
+  placeholderTitle: {
+    color: colors.text,
+    fontSize: 24,
+    fontWeight: '900',
+    letterSpacing: 1.2,
+    textTransform: 'uppercase',
+    marginBottom: spacing.xs,
+  },
+  placeholderCopy: {
+    color: colors.textMuted,
+    fontSize: 13,
+    lineHeight: 19,
   },
 });
