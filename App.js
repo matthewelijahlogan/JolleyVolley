@@ -368,9 +368,10 @@ export default function App() {
 
       if (screenStackRef.current.length > 1) {
         setScreenStack(current => current.slice(0, -1));
+        return true;
       }
 
-      return true;
+      return false;
     });
 
     return () => {
@@ -956,3 +957,4 @@ export default function App() {
     </View>
   );
 }
+
