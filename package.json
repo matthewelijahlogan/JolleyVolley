@@ -4,7 +4,8 @@
   "private": true,
   "scripts": {
     "android": "react-native run-android",
-    "start": "react-native start"
+    "start": "react-native start",
+    "scaffold:sport": "powershell -ExecutionPolicy Bypass -File ./scripts/scaffold-sport-app.ps1"
   },
   "dependencies": {
     "react": "19.0.0",
